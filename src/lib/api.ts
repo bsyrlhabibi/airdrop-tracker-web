@@ -216,7 +216,7 @@ export async function getAccountAirdrops(
 
 export async function assignAirdrop(
   accountId: number,
-  data: { airdrop_id: number; template?: string; custom_tasks?: { description: string; frequency: string }[] }
+  data: { airdrop_id: number; notes?: string }
 ): Promise<AccountAirdrop> {
   return request<AccountAirdrop>(`/api/accounts/${accountId}/airdrops`, {
     method: "POST",
