@@ -9,7 +9,7 @@ import type {
 } from "./types";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://airdrop-tracker-api.fly.dev";
+  process.env.NEXT_PUBLIC_API_URL || "https://airdrop-tracker-api-v1.fly.dev";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
