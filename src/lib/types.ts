@@ -14,9 +14,34 @@ export interface RegisterResponse {
   user: User;
 }
 
+export interface Account {
+  id: number;
+  user_id: number;
+  name: string;
+  color: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  wallets?: Wallet[];
+  airdrops?: Airdrop[];
+}
+
+export interface AccountStats {
+  id: number;
+  name: string;
+  color: string;
+  total_airdrops: number;
+  active_airdrops: number;
+  total_tasks: number;
+  completed_tasks: number;
+  pending_tasks: number;
+  total_wallets: number;
+}
+
 export interface Airdrop {
   id: number;
   user_id: number;
+  account_id: number;
   name: string;
   chain: string;
   category: string;
@@ -27,6 +52,7 @@ export interface Airdrop {
   deadline: string | null;
   created_at: string;
   updated_at: string;
+  account?: Account;
   tasks?: Task[];
   completed_tasks?: number;
   total_tasks?: number;
@@ -49,10 +75,12 @@ export interface Task {
 export interface Wallet {
   id: number;
   user_id: number;
+  account_id: number;
   label: string;
   address: string;
   chain: string;
   created_at: string;
+  account?: Account;
 }
 
 export interface DashboardSummary {
@@ -62,4 +90,6 @@ export interface DashboardSummary {
   completed_tasks: number;
   pending_tasks: number;
   total_wallets: number;
+  total_accounts: number;
+  accounts: AccountStats[];
 }

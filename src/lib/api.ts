@@ -2,6 +2,7 @@ import type {
   LoginResponse,
   RegisterResponse,
   User,
+  Account,
   Airdrop,
   Task,
   Wallet,
@@ -78,9 +79,49 @@ export async function register(
   });
 }
 
+// Accounts
+export async function getAccounts(): Promise<Account[]> {
+  return request<Account[]>("/api/accounts");
+}
+
+export async function getAccount(id: number): Promise<Account> {
+  return request<Account>(`/api/accounts/${id}`);
+}
+
+export async function createAccount(data: {
+  name: string;
+  color?: string;
+  notes?: string;
+}): Promise<Account> {
+  return request<Account>("/api/accounts", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateAccount(
+  id: number,
+  data: Partial<{ name: string; color: string; notes: string }>
+): Promise<Account> {
+  return request<Account>(`/api/accounts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAccount(
+  id: number,
+  force = false
+): Promise<void> {
+  return request<void>(`/api/accounts/${id}${force ? "?force=true" : ""}`, {
+    method: "DELETE",
+  });
+}
+
 // Airdrops
-export async function getAirdrops(): Promise<Airdrop[]> {
-  return request<Airdrop[]>("/api/airdrops");
+export async function getAirdrops(accountId?: number): Promise<Airdrop[]> {
+  const query = accountId ? `?account_id=${accountId}` : "";
+  return request<Airdrop[]>(`/api/airdrops${query}`);
 }
 
 export async function getAirdrop(id: number): Promise<Airdrop> {
@@ -88,6 +129,7 @@ export async function getAirdrop(id: number): Promise<Airdrop> {
 }
 
 export async function createAirdrop(data: {
+  account_id: number;
   name: string;
   chain: string;
   category: string;
@@ -152,11 +194,13 @@ export async function deleteTask(taskId: number): Promise<void> {
 }
 
 // Wallets
-export async function getWallets(): Promise<Wallet[]> {
-  return request<Wallet[]>("/api/wallets");
+export async function getWallets(accountId?: number): Promise<Wallet[]> {
+  const query = accountId ? `?account_id=${accountId}` : "";
+  return request<Wallet[]>(`/api/wallets${query}`);
 }
 
 export async function createWallet(data: {
+  account_id: number;
   label: string;
   address: string;
   chain: string;

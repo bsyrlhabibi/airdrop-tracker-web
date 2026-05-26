@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getWallets, createWallet, deleteWallet } from "@/lib/api";
+import { getWallets, createWallet, deleteWallet, getAccounts } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, Wallet, Loader2, Copy } from "lucide-react";
 
@@ -31,13 +38,19 @@ export default function WalletsPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [accountId, setAccountId] = useState("");
   const [label, setLabel] = useState("");
   const [address, setAddress] = useState("");
   const [chain, setChain] = useState("");
 
   const { data: wallets, isLoading } = useQuery({
     queryKey: ["wallets"],
-    queryFn: getWallets,
+    queryFn: () => getWallets(),
+  });
+
+  const { data: accounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: getAccounts,
   });
 
   const createMutation = useMutation({
@@ -67,11 +80,15 @@ export default function WalletsPage() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!accountId) {
+      toast.error("Please select an account");
+      return;
+    }
     if (!label || !address || !chain) {
       toast.error("All fields are required");
       return;
     }
-    createMutation.mutate({ label, address, chain });
+    createMutation.mutate({ account_id: Number(accountId), label, address, chain });
   }
 
   function truncateAddress(addr: string) {
@@ -179,6 +196,27 @@ export default function WalletsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Account *</Label>
+              <Select value={accountId} onValueChange={(v) => v && setAccountId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(accounts ?? []).map((acc) => (
+                    <SelectItem key={acc.id} value={String(acc.id)}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: acc.color }}
+                        />
+                        {acc.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="wallet-label">Label</Label>
               <Input

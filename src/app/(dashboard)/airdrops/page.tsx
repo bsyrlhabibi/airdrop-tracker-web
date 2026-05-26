@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAirdrops, createAirdrop } from "@/lib/api";
+import { getAirdrops, createAirdrop, getAccounts } from "@/lib/api";
 import { AirdropCard } from "@/components/airdrop-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ export default function AirdropsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Create form state
+  const [accountId, setAccountId] = useState("");
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
   const [category, setCategory] = useState("");
@@ -43,7 +44,12 @@ export default function AirdropsPage() {
 
   const { data: airdrops, isLoading } = useQuery({
     queryKey: ["airdrops"],
-    queryFn: getAirdrops,
+    queryFn: () => getAirdrops(),
+  });
+
+  const { data: accounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: getAccounts,
   });
 
   const createMutation = useMutation({
@@ -59,6 +65,7 @@ export default function AirdropsPage() {
   });
 
   function resetForm() {
+    setAccountId("");
     setName("");
     setChain("");
     setCategory("");
@@ -69,11 +76,23 @@ export default function AirdropsPage() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!accountId) {
+      toast.error("Please select an account");
+      return;
+    }
     if (!name || !chain) {
       toast.error("Name and chain are required");
       return;
     }
-    createMutation.mutate({ name, chain, category, priority, url, notes });
+    createMutation.mutate({
+      account_id: Number(accountId),
+      name,
+      chain,
+      category,
+      priority,
+      url,
+      notes,
+    });
   }
 
   const filtered = (airdrops ?? []).filter((a) => {
@@ -181,6 +200,27 @@ export default function AirdropsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Account *</Label>
+              <Select value={accountId} onValueChange={(v) => v && setAccountId(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(accounts ?? []).map((acc) => (
+                    <SelectItem key={acc.id} value={String(acc.id)}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: acc.color }}
+                        />
+                        {acc.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Name *</Label>
               <Input
