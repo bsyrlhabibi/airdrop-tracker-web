@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAccounts,
@@ -49,6 +49,7 @@ const COLORS = [
 ];
 
 export default function AccountsPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -171,9 +172,10 @@ export default function AccountsPage() {
       {accounts && accounts.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((account) => (
-            <Link key={account.id} href={`/accounts/${account.id}`}>
             <Card
+              key={account.id}
               className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer"
+              onClick={() => router.push(`/accounts/${account.id}`)}
             >
               {/* Color bar */}
               <div
@@ -189,7 +191,7 @@ export default function AccountsPage() {
                     />
                     <CardTitle className="text-base">{account.name}</CardTitle>
                   </div>
-                  <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()} onMouseDown={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="icon-xs"
@@ -225,7 +227,6 @@ export default function AccountsPage() {
                 </div>
               </CardContent>
             </Card>
-            </Link>
           ))}
         </div>
       ) : (
