@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAccounts,
@@ -162,9 +163,9 @@ export default function AccountsPage() {
       {accounts && accounts.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {accounts.map((account) => (
+            <Link key={account.id} href={`/accounts/${account.id}`}>
             <Card
-              key={account.id}
-              className="relative overflow-hidden transition-shadow hover:shadow-md"
+              className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer"
             >
               {/* Color bar */}
               <div
@@ -206,7 +207,7 @@ export default function AccountsPage() {
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className="text-xs">
                       <Rocket className="mr-1 h-3 w-3" />
-                      {account.airdrops?.length ?? 0} airdrops
+                      {account.account_airdrops?.length ?? 0} airdrops
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       <Wallet className="mr-1 h-3 w-3" />
@@ -216,6 +217,7 @@ export default function AccountsPage() {
                 </div>
               </CardContent>
             </Card>
+            </Link>
           ))}
         </div>
       ) : (

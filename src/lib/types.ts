@@ -23,7 +23,7 @@ export interface Account {
   created_at: string;
   updated_at: string;
   wallets?: Wallet[];
-  airdrops?: Airdrop[];
+  account_airdrops?: AccountAirdrop[];
 }
 
 export interface AccountStats {
@@ -40,8 +40,6 @@ export interface AccountStats {
 
 export interface Airdrop {
   id: number;
-  user_id: number;
-  account_id: number;
   name: string;
   chain: string;
   category: string;
@@ -52,15 +50,30 @@ export interface Airdrop {
   deadline: string | null;
   created_at: string;
   updated_at: string;
-  account?: Account;
+}
+
+export interface AccountAirdrop {
+  id: number;
+  account_id: number;
+  airdrop_id: number;
+  status: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  airdrop?: Airdrop;
   tasks?: Task[];
-  completed_tasks?: number;
-  total_tasks?: number;
+}
+
+export interface TaskTemplate {
+  id: number;
+  name: string;
+  description: string;
+  tasks: { description: string; frequency: string }[];
 }
 
 export interface Task {
   id: number;
-  airdrop_id: number;
+  account_airdrop_id: number;
   description: string;
   frequency: string;
   is_completed: boolean;
@@ -92,4 +105,17 @@ export interface DashboardSummary {
   total_wallets: number;
   total_accounts: number;
   accounts: AccountStats[];
+}
+
+export interface ComparisonData {
+  accounts: {
+    id: number;
+    name: string;
+    color: string;
+    total_airdrops: number;
+    completed_airdrops: number;
+    total_tasks: number;
+    completed_tasks: number;
+    completion_pct: number;
+  }[];
 }

@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAirdrops, createAirdrop, getAccounts } from "@/lib/api";
-import { AirdropCard } from "@/components/airdrop-card";
+import {
+  getAirdrops,
+  createAirdrop,
+  getAccounts,
+  assignAirdrop,
+  getTaskTemplates,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -25,16 +32,32 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Rocket, Loader2 } from "lucide-react";
+import { Plus, Search, Rocket, Loader2, UserPlus, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Airdrop } from "@/lib/types";
+
+const priorityColors: Record<string, string> = {
+  high: "bg-red-100 text-red-700 border-red-200",
+  medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  low: "bg-green-100 text-green-700 border-green-200",
+};
+
+const statusColors: Record<string, string> = {
+  active: "bg-blue-100 text-blue-700",
+  completed: "bg-green-100 text-green-700",
+  missed: "bg-red-100 text-red-700",
+  upcoming: "bg-gray-100 text-gray-700",
+};
 
 export default function AirdropsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterChain, setFilterChain] = useState<string>("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignAirdropId, setAssignAirdropId] = useState<number | null>(null);
 
   // Create form state
-  const [accountId, setAccountId] = useState("");
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
   const [category, setCategory] = useState("");
@@ -42,9 +65,13 @@ export default function AirdropsPage() {
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");
 
+  // Assign form state
+  const [assignAccountId, setAssignAccountId] = useState("");
+  const [assignTemplate, setAssignTemplate] = useState("");
+
   const { data: airdrops, isLoading } = useQuery({
     queryKey: ["airdrops"],
-    queryFn: () => getAirdrops(),
+    queryFn: getAirdrops,
   });
 
   const { data: accounts } = useQuery({
@@ -52,20 +79,41 @@ export default function AirdropsPage() {
     queryFn: getAccounts,
   });
 
+  const { data: templates } = useQuery({
+    queryKey: ["task-templates"],
+    queryFn: getTaskTemplates,
+  });
+
   const createMutation = useMutation({
     mutationFn: createAirdrop,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrops"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Airdrop created");
       resetForm();
-      setDialogOpen(false);
+      setCreateOpen(false);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (data: { accountId: number; airdropId: number; template: string }) =>
+      assignAirdrop(data.accountId, {
+        airdrop_id: data.airdropId,
+        template: data.template || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Airdrop assigned to account");
+      setAssignOpen(false);
+      setAssignAirdropId(null);
+      setAssignAccountId("");
+      setAssignTemplate("");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   function resetForm() {
-    setAccountId("");
     setName("");
     setChain("");
     setCategory("");
@@ -76,23 +124,31 @@ export default function AirdropsPage() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!accountId) {
-      toast.error("Please select an account");
-      return;
-    }
     if (!name || !chain) {
       toast.error("Name and chain are required");
       return;
     }
-    createMutation.mutate({
-      account_id: Number(accountId),
-      name,
-      chain,
-      category,
-      priority,
-      url,
-      notes,
+    createMutation.mutate({ name, chain, category, priority, url, notes });
+  }
+
+  function handleAssign(e: React.FormEvent) {
+    e.preventDefault();
+    if (!assignAccountId || !assignAirdropId) {
+      toast.error("Please select an account");
+      return;
+    }
+    assignMutation.mutate({
+      accountId: Number(assignAccountId),
+      airdropId: assignAirdropId,
+      template: assignTemplate,
     });
+  }
+
+  function openAssign(airdropId: number) {
+    setAssignAirdropId(airdropId);
+    setAssignAccountId("");
+    setAssignTemplate("");
+    setAssignOpen(true);
   }
 
   const filtered = (airdrops ?? []).filter((a) => {
@@ -121,12 +177,12 @@ export default function AirdropsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Airdrops</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Airdrop Catalog</h1>
           <p className="text-sm text-muted-foreground">
-            Manage your airdrop tracking
+            Global airdrop catalog — assign to accounts to start tracking
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Airdrop
         </Button>
@@ -167,7 +223,11 @@ export default function AirdropsPage() {
       {filtered.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((airdrop) => (
-            <AirdropCard key={airdrop.id} airdrop={airdrop} />
+            <AirdropCatalogCard
+              key={airdrop.id}
+              airdrop={airdrop}
+              onAssign={openAssign}
+            />
           ))}
         </div>
       ) : (
@@ -182,7 +242,7 @@ export default function AirdropsPage() {
               : "Create your first airdrop to get started"}
           </p>
           {!search && !filterChain && (
-            <Button onClick={() => setDialogOpen(true)}>
+            <Button onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Airdrop
             </Button>
@@ -191,36 +251,15 @@ export default function AirdropsPage() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New Airdrop</DialogTitle>
             <DialogDescription>
-              Add a new airdrop to track
+              Add a new airdrop to the global catalog
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label>Account *</Label>
-              <Select value={accountId} onValueChange={(v) => v && setAccountId(v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(accounts ?? []).map((acc) => (
-                    <SelectItem key={acc.id} value={String(acc.id)}>
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: acc.color }}
-                        />
-                        {acc.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Name *</Label>
               <Input
@@ -296,6 +335,143 @@ export default function AirdropsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Assign to Account Dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign to Account</DialogTitle>
+            <DialogDescription>
+              Select an account and optional task template
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAssign} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Account *</Label>
+              <Select
+                value={assignAccountId}
+                onValueChange={(v) => v && setAssignAccountId(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(accounts ?? []).map((acc) => (
+                    <SelectItem key={acc.id} value={String(acc.id)}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: acc.color }}
+                        />
+                        {acc.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Task Template (optional)</Label>
+              <Select
+                value={assignTemplate || "__none__"}
+                onValueChange={(v) =>
+                  setAssignTemplate(!v || v === "__none__" ? "" : v)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No template</SelectItem>
+                  {(templates ?? []).map((t) => (
+                    <SelectItem key={t.name} value={t.name}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>
+                Cancel
+              </DialogClose>
+              <Button type="submit" disabled={assignMutation.isPending}>
+                {assignMutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Assign
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function AirdropCatalogCard({
+  airdrop,
+  onAssign,
+}: {
+  airdrop: Airdrop;
+  onAssign: (id: number) => void;
+}) {
+  return (
+    <Card className="transition-shadow hover:shadow-md">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <CardTitle className="text-base">{airdrop.name}</CardTitle>
+          {airdrop.url && (
+            <a
+              href={airdrop.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+            </a>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {airdrop.chain}
+          </Badge>
+          {airdrop.category && (
+            <Badge variant="secondary" className="text-xs">
+              {airdrop.category}
+            </Badge>
+          )}
+          <Badge
+            variant="secondary"
+            className={cn(
+              "text-xs",
+              priorityColors[airdrop.priority] || ""
+            )}
+          >
+            {airdrop.priority}
+          </Badge>
+          <Badge
+            variant="secondary"
+            className={cn(
+              "text-xs",
+              statusColors[airdrop.status] || ""
+            )}
+          >
+            {airdrop.status}
+          </Badge>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => onAssign(airdrop.id)}
+        >
+          <UserPlus className="mr-2 h-3.5 w-3.5" />
+          Assign to Account
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

@@ -4,9 +4,12 @@ import type {
   User,
   Account,
   Airdrop,
+  AccountAirdrop,
   Task,
   Wallet,
   DashboardSummary,
+  TaskTemplate,
+  ComparisonData,
 } from "./types";
 
 const API_BASE =
@@ -118,10 +121,19 @@ export async function deleteAccount(
   });
 }
 
-// Airdrops
-export async function getAirdrops(accountId?: number): Promise<Airdrop[]> {
-  const query = accountId ? `?account_id=${accountId}` : "";
-  return request<Airdrop[]>(`/api/airdrops${query}`);
+export async function cloneAccount(
+  id: number,
+  data: { name: string; color?: string }
+): Promise<Account> {
+  return request<Account>(`/api/accounts/${id}/clone`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// Airdrops (global catalog)
+export async function getAirdrops(): Promise<Airdrop[]> {
+  return request<Airdrop[]>("/api/airdrops");
 }
 
 export async function getAirdrop(id: number): Promise<Airdrop> {
@@ -129,7 +141,6 @@ export async function getAirdrop(id: number): Promise<Airdrop> {
 }
 
 export async function createAirdrop(data: {
-  account_id: number;
   name: string;
   chain: string;
   category: string;
@@ -166,16 +177,43 @@ export async function deleteAirdrop(id: number): Promise<void> {
   return request<void>(`/api/airdrops/${id}`, { method: "DELETE" });
 }
 
-// Tasks
-export async function getTasks(airdropId: number): Promise<Task[]> {
-  return request<Task[]>(`/api/airdrops/${airdropId}/tasks`);
+// Account Airdrops (assign/unassign)
+export async function getAccountAirdrops(
+  accountId: number
+): Promise<AccountAirdrop[]> {
+  return request<AccountAirdrop[]>(`/api/accounts/${accountId}/airdrops`);
+}
+
+export async function assignAirdrop(
+  accountId: number,
+  data: { airdrop_id: number; template?: string; custom_tasks?: { description: string; frequency: string }[] }
+): Promise<AccountAirdrop> {
+  return request<AccountAirdrop>(`/api/accounts/${accountId}/airdrops`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeAirdropFromAccount(
+  accountId: number,
+  accountAirdropId: number
+): Promise<void> {
+  return request<void>(
+    `/api/accounts/${accountId}/airdrops/${accountAirdropId}`,
+    { method: "DELETE" }
+  );
+}
+
+// Tasks (now under account-airdrops)
+export async function getTasks(accountAirdropId: number): Promise<Task[]> {
+  return request<Task[]>(`/api/account_airdrops/${accountAirdropId}/tasks`);
 }
 
 export async function createTask(
-  airdropId: number,
+  accountAirdropId: number,
   data: { description: string; frequency: string; wallet_id?: number }
 ): Promise<Task> {
-  return request<Task>(`/api/airdrops/${airdropId}/tasks`, {
+  return request<Task>(`/api/account_airdrops/${accountAirdropId}/tasks`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -218,4 +256,14 @@ export async function deleteWallet(id: number): Promise<void> {
 // Dashboard
 export async function getDashboard(): Promise<DashboardSummary> {
   return request<DashboardSummary>("/api/dashboard");
+}
+
+// Comparison
+export async function getComparison(): Promise<ComparisonData> {
+  return request<ComparisonData>("/api/dashboard/comparison");
+}
+
+// Task Templates
+export async function getTaskTemplates(): Promise<TaskTemplate[]> {
+  return request<TaskTemplate[]>("/api/task_templates");
 }

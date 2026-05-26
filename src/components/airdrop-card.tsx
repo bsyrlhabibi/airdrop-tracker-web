@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { Airdrop } from "@/lib/types";
 import { ExternalLink } from "lucide-react";
@@ -22,12 +21,6 @@ const statusColors: Record<string, string> = {
 };
 
 export function AirdropCard({ airdrop }: { airdrop: Airdrop }) {
-  const tasks = airdrop.tasks ?? [];
-  const total = airdrop.total_tasks ?? tasks.length;
-  const completed =
-    airdrop.completed_tasks ?? tasks.filter((t) => t.is_completed).length;
-  const progress = total > 0 ? (completed / total) * 100 : 0;
-
   return (
     <Link href={`/airdrops/${airdrop.id}`}>
       <Card className="transition-shadow hover:shadow-md cursor-pointer">
@@ -39,7 +32,7 @@ export function AirdropCard({ airdrop }: { airdrop: Airdrop }) {
             )}
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-xs">
               {airdrop.chain}
@@ -63,17 +56,6 @@ export function AirdropCard({ airdrop }: { airdrop: Airdrop }) {
               {airdrop.status}
             </Badge>
           </div>
-          {total > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>
-                  {completed}/{total} tasks
-                </span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-1.5" />
-            </div>
-          )}
           {airdrop.category && (
             <p className="text-xs text-muted-foreground">
               {airdrop.category}
