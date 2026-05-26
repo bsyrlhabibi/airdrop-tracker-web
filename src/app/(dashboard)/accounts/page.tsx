@@ -189,18 +189,18 @@ export default function AccountsPage() {
                     />
                     <CardTitle className="text-base">{account.name}</CardTitle>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()} onMouseDown={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      onClick={() => openEdit(account)}
+                      onClick={(e) => { e.stopPropagation(); openEdit(account); }}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      onClick={() => setDeleteId(account.id)}
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(account.id); }}
                     >
                       <Trash2 className="h-3.5 w-3.5 text-red-500" />
                     </Button>
