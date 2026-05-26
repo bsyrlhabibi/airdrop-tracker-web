@@ -42,19 +42,19 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500">
             Overview of your airdrop tracking
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportToExcel}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={exportToExcel} className="flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" />
             Export Excel
           </Button>
-          <Button render={<Link href="/airdrops" />}>
+          <Button render={<Link href="/airdrops" />} className="flex-1 sm:flex-none">
             <Plus className="mr-2 h-4 w-4" />
             New Airdrop
           </Button>
