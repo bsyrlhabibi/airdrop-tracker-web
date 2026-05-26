@@ -120,6 +120,7 @@ export default function AirdropDetailPage({
       createTask(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task added");
       setTaskDesc("");
@@ -132,6 +133,7 @@ export default function AirdropDetailPage({
     mutationFn: (taskId: number) => completeTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (err: Error) => toast.error(err.message),
@@ -141,6 +143,7 @@ export default function AirdropDetailPage({
     mutationFn: (taskId: number) => resetTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (err: Error) => toast.error(err.message),
@@ -150,6 +153,7 @@ export default function AirdropDetailPage({
     mutationFn: (taskId: number) => deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task deleted");
     },

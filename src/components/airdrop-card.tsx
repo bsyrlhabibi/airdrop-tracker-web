@@ -22,8 +22,10 @@ const statusColors: Record<string, string> = {
 };
 
 export function AirdropCard({ airdrop }: { airdrop: Airdrop }) {
-  const completed = airdrop.completed_tasks ?? 0;
-  const total = airdrop.total_tasks ?? airdrop.tasks?.length ?? 0;
+  const tasks = airdrop.tasks ?? [];
+  const total = airdrop.total_tasks ?? tasks.length;
+  const completed =
+    airdrop.completed_tasks ?? tasks.filter((t) => t.is_completed).length;
   const progress = total > 0 ? (completed / total) * 100 : 0;
 
   return (
