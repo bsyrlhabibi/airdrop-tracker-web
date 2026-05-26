@@ -4,6 +4,7 @@ import type {
   User,
   Account,
   Airdrop,
+  AirdropTask,
   AccountAirdrop,
   Task,
   Wallet,
@@ -175,6 +176,35 @@ export async function updateAirdrop(
 
 export async function deleteAirdrop(id: number): Promise<void> {
   return request<void>(`/api/airdrops/${id}`, { method: "DELETE" });
+}
+
+// Airdrop Tasks (checklist per airdrop)
+export async function getAirdropTasks(airdropId: number): Promise<AirdropTask[]> {
+  return request<AirdropTask[]>(`/api/airdrops/${airdropId}/tasks`);
+}
+
+export async function createAirdropTask(
+  airdropId: number,
+  data: { description: string; frequency?: string }
+): Promise<AirdropTask> {
+  return request<AirdropTask>(`/api/airdrops/${airdropId}/tasks`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function toggleAirdropTaskComplete(taskId: number): Promise<AirdropTask> {
+  return request<AirdropTask>(`/api/airdrop-tasks/${taskId}/complete`, {
+    method: "PUT",
+  });
+}
+
+export async function deleteAirdropTask(taskId: number): Promise<void> {
+  return request<void>(`/api/airdrop-tasks/${taskId}`, { method: "DELETE" });
+}
+
+export async function resetAirdropTasks(airdropId: number): Promise<void> {
+  return request<void>(`/api/airdrops/${airdropId}/tasks/reset`, { method: "PUT" });
 }
 
 // Account Airdrops (assign/unassign)

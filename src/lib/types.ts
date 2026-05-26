@@ -85,6 +85,18 @@ export interface Task {
   created_at: string;
 }
 
+export interface AirdropTask {
+  id: number;
+  airdrop_id: number;
+  description: string;
+  frequency: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Wallet {
   id: number;
   user_id: number;

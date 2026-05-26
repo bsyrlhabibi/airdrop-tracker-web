@@ -7,9 +7,6 @@ import {
   getAirdrops,
   createAirdrop,
   deleteAirdrop,
-  getAccounts,
-  assignAirdrop,
-  getTaskTemplates,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Rocket, Loader2, UserPlus, ExternalLink, Trash2, Eye } from "lucide-react";
+import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Airdrop } from "@/lib/types";
 
@@ -57,8 +54,6 @@ export default function AirdropsPage() {
   const [search, setSearch] = useState("");
   const [filterChain, setFilterChain] = useState<string>("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [assignAirdropId, setAssignAirdropId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // Create form state
@@ -69,23 +64,9 @@ export default function AirdropsPage() {
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Assign form state
-  const [assignAccountId, setAssignAccountId] = useState("");
-  const [assignTemplate, setAssignTemplate] = useState("");
-
   const { data: airdrops, isLoading } = useQuery({
     queryKey: ["airdrops"],
     queryFn: getAirdrops,
-  });
-
-  const { data: accounts } = useQuery({
-    queryKey: ["accounts"],
-    queryFn: getAccounts,
-  });
-
-  const { data: templates } = useQuery({
-    queryKey: ["task-templates"],
-    queryFn: getTaskTemplates,
   });
 
   const createMutation = useMutation({
@@ -95,24 +76,6 @@ export default function AirdropsPage() {
       toast.success("Airdrop created");
       resetForm();
       setCreateOpen(false);
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: (data: { accountId: number; airdropId: number; template: string }) =>
-      assignAirdrop(data.accountId, {
-        airdrop_id: data.airdropId,
-        template: data.template || undefined,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Airdrop assigned to account");
-      setAssignOpen(false);
-      setAssignAirdropId(null);
-      setAssignAccountId("");
-      setAssignTemplate("");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -146,26 +109,6 @@ export default function AirdropsPage() {
     createMutation.mutate({ name, chain, category, priority, url, notes });
   }
 
-  function handleAssign(e: React.FormEvent) {
-    e.preventDefault();
-    if (!assignAccountId || !assignAirdropId) {
-      toast.error("Please select an account");
-      return;
-    }
-    assignMutation.mutate({
-      accountId: Number(assignAccountId),
-      airdropId: assignAirdropId,
-      template: assignTemplate,
-    });
-  }
-
-  function openAssign(airdropId: number) {
-    setAssignAirdropId(airdropId);
-    setAssignAccountId("");
-    setAssignTemplate("");
-    setAssignOpen(true);
-  }
-
   const filtered = (airdrops ?? []).filter((a) => {
     const matchesSearch =
       !search ||
@@ -194,7 +137,7 @@ export default function AirdropsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Airdrop Catalog</h1>
           <p className="text-sm text-muted-foreground">
-            Global airdrop catalog — assign to accounts to start tracking
+            Global airdrop catalog — click to manage tasks
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
@@ -238,13 +181,65 @@ export default function AirdropsPage() {
       {filtered.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((airdrop) => (
-            <AirdropCatalogCard
+            <Card
               key={airdrop.id}
-              airdrop={airdrop}
-              onAssign={openAssign}
-              onDelete={setDeleteId}
-              onCardClick={() => router.push(`/airdrops/${airdrop.id}`)}
-            />
+              className="transition-shadow hover:shadow-md cursor-pointer"
+              onClick={() => router.push(`/airdrops/${airdrop.id}`)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-base">{airdrop.name}</CardTitle>
+                  <div className="flex items-center gap-1">
+                    {airdrop.url && (
+                      <a
+                        href={airdrop.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      </a>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(airdrop.id); }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {airdrop.chain}
+                  </Badge>
+                  {airdrop.category && (
+                    <Badge variant="secondary" className="text-xs">
+                      {airdrop.category}
+                    </Badge>
+                  )}
+                  <Badge
+                    variant="secondary"
+                    className={cn("text-xs", priorityColors[airdrop.priority])}
+                  >
+                    {airdrop.priority}
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className={cn("text-xs", statusColors[airdrop.status])}
+                  >
+                    {airdrop.status}
+                  </Badge>
+                </div>
+                {airdrop.notes && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {airdrop.notes}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : (
@@ -353,83 +348,13 @@ export default function AirdropsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Assign to Account Dialog */}
-      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Assign to Account</DialogTitle>
-            <DialogDescription>
-              Select an account and optional task template
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleAssign} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label>Account *</Label>
-              <Select
-                value={assignAccountId}
-                onValueChange={(v) => v && setAssignAccountId(v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(accounts ?? []).map((acc) => (
-                    <SelectItem key={acc.id} value={String(acc.id)}>
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: acc.color }}
-                        />
-                        {acc.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Task Template (optional)</Label>
-              <Select
-                value={assignTemplate || "__none__"}
-                onValueChange={(v) =>
-                  setAssignTemplate(!v || v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">No template</SelectItem>
-                  {(templates ?? []).map((t) => (
-                    <SelectItem key={t.name} value={t.name}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>
-                Cancel
-              </DialogClose>
-              <Button type="submit" disabled={assignMutation.isPending}>
-                {assignMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Assign
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation */}
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Airdrop</DialogTitle>
             <DialogDescription>
-              This will permanently delete this airdrop from the catalog. This cannot be undone.
+              This will permanently delete this airdrop and all its tasks. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -450,96 +375,5 @@ export default function AirdropsPage() {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function AirdropCatalogCard({
-  airdrop,
-  onAssign,
-  onDelete,
-  onCardClick,
-}: {
-  airdrop: Airdrop;
-  onAssign: (id: number) => void;
-  onDelete: (id: number) => void;
-  onCardClick: () => void;
-}) {
-  return (
-    <Card className="transition-shadow hover:shadow-md cursor-pointer" onClick={onCardClick}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-base">{airdrop.name}</CardTitle>
-          <div className="flex items-center gap-1">
-            {airdrop.url && (
-              <a
-                href={airdrop.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </a>
-            )}
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={(e) => { e.stopPropagation(); onDelete(airdrop.id); }}
-            >
-              <Trash2 className="h-3.5 w-3.5 text-red-500" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            {airdrop.chain}
-          </Badge>
-          {airdrop.category && (
-            <Badge variant="secondary" className="text-xs">
-              {airdrop.category}
-            </Badge>
-          )}
-          <Badge
-            variant="secondary"
-            className={cn(
-              "text-xs",
-              priorityColors[airdrop.priority] || ""
-            )}
-          >
-            {airdrop.priority}
-          </Badge>
-          <Badge
-            variant="secondary"
-            className={cn(
-              "text-xs",
-              statusColors[airdrop.status] || ""
-            )}
-          >
-            {airdrop.status}
-          </Badge>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={(e) => { e.stopPropagation(); onAssign(airdrop.id); }}
-          >
-            <UserPlus className="mr-2 h-3.5 w-3.5" />
-            Assign
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={(e) => { e.stopPropagation(); onCardClick(); }}
-          >
-            <Eye className="mr-2 h-3.5 w-3.5" />
-            Detail
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
