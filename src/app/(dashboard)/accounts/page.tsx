@@ -33,7 +33,9 @@ import {
   Rocket,
   Wallet,
   Loader2,
+  Download,
 } from "lucide-react";
+import { exportToExcel } from "@/lib/export";
 
 const COLORS = [
   "#3B82F6", // blue
@@ -153,10 +155,16 @@ export default function AccountsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
           <p className="text-sm text-gray-500">Manage your sybil accounts</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Account
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportToExcel}>
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Account
+          </Button>
+        </div>
       </div>
 
       {/* Account Grid */}

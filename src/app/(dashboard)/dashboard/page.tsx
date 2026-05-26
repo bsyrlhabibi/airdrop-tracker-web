@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getDashboard, getAirdrops } from "@/lib/api";
+import { exportToExcel } from "@/lib/export";
 import { StatsCard } from "@/components/stats-card";
 import { AirdropCard } from "@/components/airdrop-card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   Activity,
   Plus,
   Users,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -47,10 +49,16 @@ export default function DashboardPage() {
             Overview of your airdrop tracking
           </p>
         </div>
-        <Button render={<Link href="/airdrops" />}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportToExcel}>
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button render={<Link href="/airdrops" />}>
             <Plus className="mr-2 h-4 w-4" />
             New Airdrop
-        </Button>
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
