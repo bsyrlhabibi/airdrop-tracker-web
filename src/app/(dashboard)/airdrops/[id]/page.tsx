@@ -66,7 +66,8 @@ export default function AirdropDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const { id: idStr } = use(params);
+  const id = Number(idStr);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -128,7 +129,7 @@ export default function AirdropDetailPage({
   });
 
   const completeTaskMutation = useMutation({
-    mutationFn: (taskId: string) => completeTask(taskId),
+    mutationFn: (taskId: number) => completeTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -137,7 +138,7 @@ export default function AirdropDetailPage({
   });
 
   const resetTaskMutation = useMutation({
-    mutationFn: (taskId: string) => resetTask(taskId),
+    mutationFn: (taskId: number) => resetTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -146,7 +147,7 @@ export default function AirdropDetailPage({
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (taskId: string) => deleteTask(taskId),
+    mutationFn: (taskId: number) => deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -305,7 +306,7 @@ export default function AirdropDetailPage({
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Tasks</CardTitle>
             <span className="text-sm text-muted-foreground">
-              {tasks.filter((t) => t.completed).length}/{tasks.length} completed
+              {tasks.filter((t) => t.is_completed).length}/{tasks.length} completed
             </span>
           </div>
         </CardHeader>

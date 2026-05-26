@@ -1,5 +1,5 @@
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
 }
@@ -9,9 +9,14 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface RegisterResponse {
+  message: string;
+  user: User;
+}
+
 export interface Airdrop {
-  id: string;
-  user_id: string;
+  id: number;
+  user_id: number;
   name: string;
   chain: string;
   category: string;
@@ -28,19 +33,22 @@ export interface Airdrop {
 }
 
 export interface Task {
-  id: string;
-  airdrop_id: string;
+  id: number;
+  airdrop_id: number;
   description: string;
   frequency: string;
-  completed: boolean;
-  last_completed: string | null;
+  is_completed: boolean;
+  completed_at: string | null;
+  next_due: string | null;
+  wallet_id: number | null;
+  gas_spent: number;
+  tx_hash: string;
   created_at: string;
-  updated_at: string;
 }
 
 export interface Wallet {
-  id: string;
-  user_id: string;
+  id: number;
+  user_id: number;
   label: string;
   address: string;
   chain: string;

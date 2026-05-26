@@ -1,5 +1,6 @@
 import type {
   LoginResponse,
+  RegisterResponse,
   User,
   Airdrop,
   Task,
@@ -7,7 +8,8 @@ import type {
   DashboardSummary,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "https://airdrop-tracker-api.fly.dev";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -69,8 +71,8 @@ export async function register(
   email: string,
   password: string,
   name: string
-): Promise<LoginResponse> {
-  return request<LoginResponse>("/api/auth/register", {
+): Promise<RegisterResponse> {
+  return request<RegisterResponse>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({ email, password, name }),
   });
@@ -81,7 +83,7 @@ export async function getAirdrops(): Promise<Airdrop[]> {
   return request<Airdrop[]>("/api/airdrops");
 }
 
-export async function getAirdrop(id: string): Promise<Airdrop> {
+export async function getAirdrop(id: number): Promise<Airdrop> {
   return request<Airdrop>(`/api/airdrops/${id}`);
 }
 
@@ -100,7 +102,7 @@ export async function createAirdrop(data: {
 }
 
 export async function updateAirdrop(
-  id: string,
+  id: number,
   data: Partial<{
     name: string;
     chain: string;
@@ -118,18 +120,18 @@ export async function updateAirdrop(
   });
 }
 
-export async function deleteAirdrop(id: string): Promise<void> {
+export async function deleteAirdrop(id: number): Promise<void> {
   return request<void>(`/api/airdrops/${id}`, { method: "DELETE" });
 }
 
 // Tasks
-export async function getTasks(airdropId: string): Promise<Task[]> {
+export async function getTasks(airdropId: number): Promise<Task[]> {
   return request<Task[]>(`/api/airdrops/${airdropId}/tasks`);
 }
 
 export async function createTask(
-  airdropId: string,
-  data: { description: string; frequency: string }
+  airdropId: number,
+  data: { description: string; frequency: string; wallet_id?: number }
 ): Promise<Task> {
   return request<Task>(`/api/airdrops/${airdropId}/tasks`, {
     method: "POST",
@@ -137,15 +139,15 @@ export async function createTask(
   });
 }
 
-export async function completeTask(taskId: string): Promise<Task> {
+export async function completeTask(taskId: number): Promise<Task> {
   return request<Task>(`/api/tasks/${taskId}/complete`, { method: "PUT" });
 }
 
-export async function resetTask(taskId: string): Promise<Task> {
+export async function resetTask(taskId: number): Promise<Task> {
   return request<Task>(`/api/tasks/${taskId}/reset`, { method: "PUT" });
 }
 
-export async function deleteTask(taskId: string): Promise<void> {
+export async function deleteTask(taskId: number): Promise<void> {
   return request<void>(`/api/tasks/${taskId}`, { method: "DELETE" });
 }
 
@@ -165,7 +167,7 @@ export async function createWallet(data: {
   });
 }
 
-export async function deleteWallet(id: string): Promise<void> {
+export async function deleteWallet(id: number): Promise<void> {
   return request<void>(`/api/wallets/${id}`, { method: "DELETE" });
 }
 

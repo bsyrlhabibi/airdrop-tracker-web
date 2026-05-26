@@ -54,10 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleRegister = useCallback(
     async (email: string, password: string, name: string) => {
-      const res = await api.register(email, password, name);
-      api.setToken(res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
-      setUser(res.user);
+      await api.register(email, password, name);
+      // Backend returns { message, user } — no token on register
+      // Auto-login after registration
+      const loginRes = await api.login(email, password);
+      api.setToken(loginRes.token);
+      localStorage.setItem("user", JSON.stringify(loginRes.user));
+      setUser(loginRes.user);
       router.push("/dashboard");
     },
     [router]

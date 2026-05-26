@@ -30,7 +30,7 @@ import { Plus, Trash2, Wallet, Loader2, Copy } from "lucide-react";
 export default function WalletsPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [label, setLabel] = useState("");
   const [address, setAddress] = useState("");
   const [chain, setChain] = useState("");

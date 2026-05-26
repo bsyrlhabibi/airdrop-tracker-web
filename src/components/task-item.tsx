@@ -29,29 +29,29 @@ export function TaskItem({
     <div
       className={cn(
         "flex items-center gap-3 rounded-lg border p-3 transition-colors",
-        task.completed
+        task.is_completed
           ? "border-green-200 bg-green-50/50"
           : "border-gray-200 bg-white"
       )}
     >
       <button
-        onClick={task.completed ? onReset : onComplete}
+        onClick={task.is_completed ? onReset : onComplete}
         disabled={completing || resetting}
         className={cn(
           "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-          task.completed
+          task.is_completed
             ? "border-green-500 bg-green-500 text-white"
             : "border-gray-300 hover:border-blue-500"
         )}
       >
-        {task.completed && <Check className="h-3 w-3" />}
+        {task.is_completed && <Check className="h-3 w-3" />}
       </button>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span
           className={cn(
             "text-sm",
-            task.completed && "text-muted-foreground line-through"
+            task.is_completed && "text-muted-foreground line-through"
           )}
         >
           {task.description}
@@ -64,7 +64,7 @@ export function TaskItem({
       </div>
 
       <div className="flex items-center gap-1">
-        {task.completed ? (
+        {task.is_completed ? (
           <Button
             variant="ghost"
             size="icon-xs"
