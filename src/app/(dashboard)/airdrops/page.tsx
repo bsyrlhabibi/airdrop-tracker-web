@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAirdrops,
   createAirdrop,
+  deleteAirdrop,
   getAccounts,
   assignAirdrop,
   getTaskTemplates,
@@ -32,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Rocket, Loader2, UserPlus, ExternalLink } from "lucide-react";
+import { Plus, Search, Rocket, Loader2, UserPlus, ExternalLink, Trash2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Airdrop } from "@/lib/types";
 
@@ -50,12 +52,14 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AirdropsPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterChain, setFilterChain] = useState<string>("");
   const [createOpen, setCreateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignAirdropId, setAssignAirdropId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   // Create form state
   const [name, setName] = useState("");
@@ -109,6 +113,17 @@ export default function AirdropsPage() {
       setAssignAirdropId(null);
       setAssignAccountId("");
       setAssignTemplate("");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteAirdrop(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Airdrop deleted");
+      setDeleteId(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -227,6 +242,8 @@ export default function AirdropsPage() {
               key={airdrop.id}
               airdrop={airdrop}
               onAssign={openAssign}
+              onDelete={setDeleteId}
+              onCardClick={() => router.push(`/airdrops/${airdrop.id}`)}
             />
           ))}
         </div>
@@ -405,6 +422,33 @@ export default function AirdropsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Airdrop</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this airdrop from the catalog. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -412,25 +456,38 @@ export default function AirdropsPage() {
 function AirdropCatalogCard({
   airdrop,
   onAssign,
+  onDelete,
+  onCardClick,
 }: {
   airdrop: Airdrop;
   onAssign: (id: number) => void;
+  onDelete: (id: number) => void;
+  onCardClick: () => void;
 }) {
   return (
-    <Card className="transition-shadow hover:shadow-md">
+    <Card className="transition-shadow hover:shadow-md cursor-pointer" onClick={onCardClick}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <CardTitle className="text-base">{airdrop.name}</CardTitle>
-          {airdrop.url && (
-            <a
-              href={airdrop.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+          <div className="flex items-center gap-1">
+            {airdrop.url && (
+              <a
+                href={airdrop.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </a>
+            )}
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={(e) => { e.stopPropagation(); onDelete(airdrop.id); }}
             >
-              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </a>
-          )}
+              <Trash2 className="h-3.5 w-3.5 text-red-500" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -462,15 +519,26 @@ function AirdropCatalogCard({
             {airdrop.status}
           </Badge>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => onAssign(airdrop.id)}
-        >
-          <UserPlus className="mr-2 h-3.5 w-3.5" />
-          Assign to Account
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={(e) => { e.stopPropagation(); onAssign(airdrop.id); }}
+          >
+            <UserPlus className="mr-2 h-3.5 w-3.5" />
+            Assign
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={(e) => { e.stopPropagation(); onCardClick(); }}
+          >
+            <Eye className="mr-2 h-3.5 w-3.5" />
+            Detail
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
