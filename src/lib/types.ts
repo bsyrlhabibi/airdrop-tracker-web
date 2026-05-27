@@ -101,6 +101,8 @@ export interface AirdropTask {
   status: string;
   start_date: string | null;
   end_date: string | null;
+  gas_spent: number;
+  tx_hash: string;
   sort_order: number;
   created_at: string;
   updated_at: string;

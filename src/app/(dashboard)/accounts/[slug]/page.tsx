@@ -123,6 +123,8 @@ export default function AccountDetailPage({
   const [editStatus, setEditStatus] = useState("pending");
   const [editFrequency, setEditFrequency] = useState("daily");
   const [editDate, setEditDate] = useState("");
+  const [editGasSpent, setEditGasSpent] = useState("");
+  const [editTxHash, setEditTxHash] = useState("");
 
   // Queries
   const { data: account, isLoading } = useQuery({
@@ -206,7 +208,7 @@ export default function AccountDetailPage({
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: (data: { taskId: number; name?: string; category_id?: number; status?: string; frequency?: string; date?: string }) =>
+    mutationFn: (data: { taskId: number; name?: string; category_id?: number; status?: string; frequency?: string; date?: string; gas_spent?: number; tx_hash?: string }) =>
       updateTask(data.taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", accountId] });
@@ -274,6 +276,8 @@ export default function AccountDetailPage({
     setEditStatus(task.status);
     setEditFrequency(task.frequency || "daily");
     setEditDate(task.date ? task.date.split("T")[0] : "");
+    setEditGasSpent(task.gas_spent ? String(task.gas_spent) : "");
+    setEditTxHash(task.tx_hash || "");
   }
 
   function handleUpdateTask() {
@@ -285,6 +289,8 @@ export default function AccountDetailPage({
       status: editStatus,
       frequency: editFrequency,
       date: editDate || undefined,
+      gas_spent: editGasSpent ? parseFloat(editGasSpent) : undefined,
+      tx_hash: editTxHash || undefined,
     });
   }
 
@@ -418,6 +424,16 @@ export default function AccountDetailPage({
                         </Select>
                         <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-36" />
                       </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-gray-500">Gas Spent:</Label>
+                          <Input type="number" step="0.0001" placeholder="0.001" value={editGasSpent} onChange={(e) => setEditGasSpent(e.target.value)} className="w-28" />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-gray-500">Tx Hash:</Label>
+                          <Input placeholder="0xabc..." value={editTxHash} onChange={(e) => setEditTxHash(e.target.value)} className="w-48" />
+                        </div>
+                      </div>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={handleUpdateTask} disabled={updateTaskMutation.isPending}>Save</Button>
                         <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>Cancel</Button>
@@ -446,6 +462,16 @@ export default function AccountDetailPage({
                         )}
                         {task.frequency && task.frequency !== "once" && (
                           <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600">{task.frequency}</Badge>
+                        )}
+                        {task.gas_spent > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ⛽ {task.gas_spent}
+                          </span>
+                        )}
+                        {task.tx_hash && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={task.tx_hash}>
+                            🔗 {task.tx_hash.slice(0, 10)}...
+                          </span>
                         )}
                       </div>
                     </div>

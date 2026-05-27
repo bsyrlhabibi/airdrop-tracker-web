@@ -208,7 +208,7 @@ export async function getAirdropTasks(airdropId: number): Promise<AirdropTask[]>
 
 export async function createAirdropTask(
   airdropId: number,
-  data: { name: string; category_id?: number; status?: string; start_date?: string; end_date?: string }
+  data: { name: string; category_id?: number; status?: string; start_date?: string; end_date?: string; gas_spent?: number; tx_hash?: string }
 ): Promise<AirdropTask> {
   return request<AirdropTask>(`/api/airdrops/${airdropId}/tasks`, {
     method: "POST",
@@ -218,7 +218,7 @@ export async function createAirdropTask(
 
 export async function updateAirdropTask(
   taskId: number,
-  data: Partial<{ name: string; category_id: number; status: string; start_date: string; end_date: string }>
+  data: Partial<{ name: string; category_id: number; status: string; start_date: string; end_date: string; gas_spent: number; tx_hash: string }>
 ): Promise<AirdropTask> {
   return request<AirdropTask>(`/api/airdrop-tasks/${taskId}`, {
     method: "PUT",
@@ -270,7 +270,7 @@ export async function createTask(
 
 export async function updateTask(
   taskId: number,
-  data: Partial<{ name: string; category_id: number; status: string; frequency: string; date: string }>
+  data: Partial<{ name: string; category_id: number; status: string; frequency: string; date: string; gas_spent: number; tx_hash: string }>
 ): Promise<Task> {
   return request<Task>(`/api/tasks/${taskId}`, {
     method: "PUT",
