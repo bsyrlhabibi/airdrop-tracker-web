@@ -176,6 +176,8 @@ export async function createAirdrop(data: {
   category: string;
   priority: string;
   url?: string;
+  date_start?: string;
+  date_end?: string;
   notes?: string;
 }): Promise<Airdrop> {
   return request<Airdrop>("/api/airdrops", {
@@ -193,6 +195,8 @@ export async function updateAirdrop(
     priority: string;
     status: string;
     url: string;
+    date_start: string;
+    date_end: string;
     notes: string;
     deadline: string;
   }>

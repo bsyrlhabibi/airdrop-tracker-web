@@ -46,6 +46,8 @@ export interface Airdrop {
   priority: "low" | "medium" | "high";
   status: string;
   url: string;
+  date_start: string | null;
+  date_end: string | null;
   notes: string;
   deadline: string | null;
   created_at: string;

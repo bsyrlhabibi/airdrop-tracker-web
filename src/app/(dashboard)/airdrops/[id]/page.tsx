@@ -231,6 +231,14 @@ export default function AirdropDetailPage({
               )}
             </div>
             {airdrop.notes && <p className="text-sm text-gray-600">{airdrop.notes}</p>}
+            {(airdrop.date_start || airdrop.date_end) && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>📅</span>
+                {airdrop.date_start && <span>Start: {new Date(airdrop.date_start).toLocaleDateString()}</span>}
+                {airdrop.date_start && airdrop.date_end && <span>→</span>}
+                {airdrop.date_end && <span>End: {new Date(airdrop.date_end).toLocaleDateString()}</span>}
+              </div>
+            )}
             {airdrop.deadline && (
               <p className="text-xs text-gray-500">
                 Deadline: {new Date(airdrop.deadline).toLocaleDateString()}

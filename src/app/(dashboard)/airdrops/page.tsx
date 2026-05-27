@@ -72,6 +72,8 @@ export default function AirdropsPage() {
   const [priority, setPriority] = useState("medium");
   const [url, setUrl] = useState("");
   const [notes, setNotes] = useState("");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
 
   const { data: airdrops, isLoading } = useQuery({
     queryKey: ["airdrops"],
@@ -117,6 +119,8 @@ export default function AirdropsPage() {
     setCategory("");
     setPriority("medium");
     setUrl("");
+    setDateStart("");
+    setDateEnd("");
     setNotes("");
   }
 
@@ -126,7 +130,7 @@ export default function AirdropsPage() {
       toast.error("Name and chain are required");
       return;
     }
-    createMutation.mutate({ name, chain, category, priority, url, notes });
+    createMutation.mutate({ name, chain, category, priority, url, date_start: dateStart || undefined, date_end: dateEnd || undefined, notes });
   }
 
   const filtered = (airdrops ?? []).filter((a) => {
@@ -275,6 +279,14 @@ export default function AirdropsPage() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+                {(airdrop.date_start || airdrop.date_end) && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span>📅</span>
+                    {airdrop.date_start && <span>{new Date(airdrop.date_start).toLocaleDateString()}</span>}
+                    {airdrop.date_start && airdrop.date_end && <span>→</span>}
+                    {airdrop.date_end && <span>{new Date(airdrop.date_end).toLocaleDateString()}</span>}
+                  </div>
+                )}
                 {airdrop.notes && (
                   <p className="text-xs text-muted-foreground line-clamp-2">{airdrop.notes}</p>
                 )}
@@ -338,6 +350,16 @@ export default function AirdropsPage() {
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="url">URL</Label>
               <Input id="url" placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dateStart">Date Start</Label>
+                <Input id="dateStart" type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="dateEnd">Date End</Label>
+                <Input id="dateEnd" type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="notes">Notes</Label>
