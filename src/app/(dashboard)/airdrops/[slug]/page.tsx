@@ -108,8 +108,6 @@ export default function AirdropDetailPage({
   const [editStatus, setEditStatus] = useState("pending");
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
-  const [editGasSpent, setEditGasSpent] = useState("");
-  const [editTxHash, setEditTxHash] = useState("");
 
   const { data: tasks } = useQuery({
     queryKey: ["airdrop-tasks", airdropId],
@@ -148,15 +146,13 @@ export default function AirdropDetailPage({
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; start_date?: string; end_date?: string; gas_spent?: number; tx_hash?: string }) =>
+    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; start_date?: string; end_date?: string }) =>
       updateAirdropTask(data.taskId, {
         name: data.name,
         category_id: data.category_id,
         status: data.status,
         start_date: data.start_date,
         end_date: data.end_date,
-        gas_spent: data.gas_spent,
-        tx_hash: data.tx_hash,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", airdropId] });
@@ -195,8 +191,6 @@ export default function AirdropDetailPage({
       status: editStatus,
       start_date: editStartDate || undefined,
       end_date: editEndDate || undefined,
-      gas_spent: editGasSpent ? parseFloat(editGasSpent) : undefined,
-      tx_hash: editTxHash || undefined,
     });
   }
 
@@ -207,8 +201,6 @@ export default function AirdropDetailPage({
     setEditStatus(task.status);
     setEditStartDate(task.start_date ? task.start_date.split("T")[0] : "");
     setEditEndDate(task.end_date ? task.end_date.split("T")[0] : "");
-    setEditGasSpent(task.gas_spent ? String(task.gas_spent) : "");
-    setEditTxHash(task.tx_hash || "");
   }
 
   function getCategoryName(id: number | null | undefined) {
@@ -405,16 +397,6 @@ export default function AirdropDetailPage({
                             <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="w-36" />
                           </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-gray-500">Gas Spent:</Label>
-                            <Input type="number" step="0.0001" placeholder="0.001" value={editGasSpent} onChange={(e) => setEditGasSpent(e.target.value)} className="w-28" />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-gray-500">Tx Hash:</Label>
-                            <Input placeholder="0xabc..." value={editTxHash} onChange={(e) => setEditTxHash(e.target.value)} className="w-48" />
-                          </div>
-                        </div>
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => handleUpdateTask(task.id)} disabled={updateTaskMutation.isPending}>Save</Button>
                           <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>Cancel</Button>
@@ -442,16 +424,6 @@ export default function AirdropDetailPage({
                               📅 {formatDate(task.start_date)}
                               {task.start_date && task.end_date && " → "}
                               {formatDate(task.end_date)}
-                            </span>
-                          )}
-                          {task.gas_spent > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              ⛽ {task.gas_spent}
-                            </span>
-                          )}
-                          {task.tx_hash && (
-                            <span className="text-xs text-muted-foreground truncate max-w-[120px]" title={task.tx_hash}>
-                              🔗 {task.tx_hash.slice(0, 10)}...
                             </span>
                           )}
                         </div>
