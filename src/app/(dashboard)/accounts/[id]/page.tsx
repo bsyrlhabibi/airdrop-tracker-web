@@ -57,13 +57,13 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { AccountAirdrop, AirdropTask, Task } from "@/lib/types";
 
-const statusOptions = ["pending", "ongoing", "finish", "edit"];
+const statusOptions = ["pending", "ongoing", "finish", "missed"];
 
 const statusColors: Record<string, string> = {
   pending: "bg-gray-100 text-gray-700",
   ongoing: "bg-yellow-100 text-yellow-700",
   finish: "bg-green-100 text-green-700",
-  edit: "bg-orange-100 text-orange-700",
+  missed: "bg-red-100 text-red-700",
 };
 
 // Airdrop task status (global template)
@@ -159,7 +159,7 @@ export default function AccountDetailPage({
   });
 
   const removeMutation = useMutation({
-    mutationFn: (accountAirdropId: number) => removeAirdropFromAccount(id, accountAirdropId),
+    mutationFn: (airdropId: number) => removeAirdropFromAccount(id, airdropId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", id] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
@@ -289,7 +289,7 @@ export default function AccountDetailPage({
     pending: (todayTasks ?? []).filter((t) => t.status === "pending").length,
     ongoing: (todayTasks ?? []).filter((t) => t.status === "ongoing").length,
     finish: (todayTasks ?? []).filter((t) => t.status === "finish").length,
-    edit: (todayTasks ?? []).filter((t) => t.status === "edit").length,
+    edit: (todayTasks ?? []).filter((t) => t.status === "missed").length,
   };
 
   if (isLoading) {
@@ -473,7 +473,7 @@ export default function AccountDetailPage({
                 { label: "Pending", key: "pending", color: "text-gray-600" },
                 { label: "Ongoing", key: "ongoing", color: "text-yellow-600" },
                 { label: "Finish", key: "finish", color: "text-green-600" },
-                { label: "Edit", key: "edit", color: "text-orange-600" },
+                { label: "Missed", key: "edit", color: "text-red-600" },
               ].map((s) => (
                 <span key={s.key} className={cn("text-xs font-medium", s.color)}>
                   {s.label}: {todayStats[s.key as keyof typeof todayStats]}
@@ -520,7 +520,7 @@ export default function AccountDetailPage({
                 pct={pct}
                 isExpanded={isExpanded}
                 onToggle={() => setExpandedAa(isExpanded ? null : aa.id)}
-                onRemove={() => setRemoveAaId(aa.id)}
+                onRemove={() => setRemoveAaId(aa.airdrop_id)}
               />
             );
           })}
