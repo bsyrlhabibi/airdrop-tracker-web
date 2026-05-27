@@ -38,7 +38,7 @@ export default function WalletsPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [accountId, setAccountId] = useState("");
+  const [accountName, setAccountName] = useState("");
   const [label, setLabel] = useState("");
   const [address, setAddress] = useState("");
   const [chain, setChain] = useState("");
@@ -80,7 +80,7 @@ export default function WalletsPage() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!accountId) {
+    if (!accountName) {
       toast.error("Please select an account");
       return;
     }
@@ -88,7 +88,12 @@ export default function WalletsPage() {
       toast.error("All fields are required");
       return;
     }
-    createMutation.mutate({ account_id: Number(accountId), label, address, chain });
+    const acc = (accounts ?? []).find((a) => a.name === accountName);
+    if (!acc) {
+      toast.error("Account not found");
+      return;
+    }
+    createMutation.mutate({ account_id: acc.id, label, address, chain });
   }
 
   function truncateAddress(addr: string) {
@@ -198,13 +203,13 @@ export default function WalletsPage() {
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Account *</Label>
-              <Select value={accountId} onValueChange={(v) => v && setAccountId(v)}>
+              <Select value={accountName} onValueChange={(v) => v && setAccountName(v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select account" />
                 </SelectTrigger>
                 <SelectContent>
                   {(accounts ?? []).map((acc) => (
-                    <SelectItem key={acc.id} value={String(acc.id)}>
+                    <SelectItem key={acc.id} value={acc.name}>
                       {acc.name}
                     </SelectItem>
                   ))}

@@ -95,7 +95,7 @@ export default function AirdropDetailPage({
 
   // Add task form
   const [taskName, setTaskName] = useState("");
-  const [taskCategoryId, setTaskCategoryId] = useState<string>("");
+  const [taskCategoryName, setTaskCategoryName] = useState<string>("");
   const [taskStatus, setTaskStatus] = useState("pending");
   const [taskStartDate, setTaskStartDate] = useState("");
   const [taskEndDate, setTaskEndDate] = useState("");
@@ -103,7 +103,7 @@ export default function AirdropDetailPage({
   // Edit task state
   const [editTaskId, setEditTaskId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
-  const [editCategoryId, setEditCategoryId] = useState<string>("");
+  const [editCategoryName, setEditCategoryName] = useState<string>("");
   const [editStatus, setEditStatus] = useState("pending");
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
@@ -135,7 +135,7 @@ export default function AirdropDetailPage({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", airdropId] });
       setTaskName("");
-      setTaskCategoryId("");
+      setTaskCategoryName("");
       setTaskStatus("pending");
       setTaskStartDate("");
       setTaskEndDate("");
@@ -174,7 +174,7 @@ export default function AirdropDetailPage({
     if (!taskName.trim()) return;
     createTaskMutation.mutate({
       name: taskName.trim(),
-      category_id: taskCategoryId && taskCategoryId !== "none" ? Number(taskCategoryId) : undefined,
+      category_id: taskCategoryName && taskCategoryName !== "none" ? (categories ?? []).find((c) => c.name === taskCategoryName)?.id : undefined,
       status: taskStatus,
       start_date: taskStartDate || undefined,
       end_date: taskEndDate || undefined,
@@ -186,7 +186,7 @@ export default function AirdropDetailPage({
     updateTaskMutation.mutate({
       taskId,
       name: editName.trim(),
-      category_id: editCategoryId && editCategoryId !== "none" ? Number(editCategoryId) : undefined,
+      category_id: editCategoryName && editCategoryName !== "none" ? (categories ?? []).find((c) => c.name === editCategoryName)?.id : undefined,
       status: editStatus,
       start_date: editStartDate || undefined,
       end_date: editEndDate || undefined,
@@ -196,7 +196,7 @@ export default function AirdropDetailPage({
   function startEdit(task: AirdropTask) {
     setEditTaskId(task.id);
     setEditName(task.name);
-    setEditCategoryId(task.category_id?.toString() || "");
+    setEditCategoryName((categories ?? []).find((c) => c.id === task.category_id)?.name || "");
     setEditStatus(task.status);
     setEditStartDate(task.start_date ? task.start_date.split("T")[0] : "");
     setEditEndDate(task.end_date ? task.end_date.split("T")[0] : "");
@@ -316,14 +316,14 @@ export default function AirdropDetailPage({
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Select value={taskCategoryId} onValueChange={(v) => setTaskCategoryId(v ?? "")}>
+                <Select value={taskCategoryName} onValueChange={(v) => setTaskCategoryName(v ?? "")}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Category</SelectItem>
                     {(categories ?? []).map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                      <SelectItem key={cat.id} value={cat.name}>
                         {cat.name}
                       </SelectItem>
                     ))}
@@ -366,14 +366,14 @@ export default function AirdropDetailPage({
                       <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
                         <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Task name" />
                         <div className="flex flex-wrap gap-2">
-                          <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v ?? "")}>
+                          <Select value={editCategoryName} onValueChange={(v) => setEditCategoryName(v ?? "")}>
                             <SelectTrigger className="w-40">
                               <SelectValue placeholder="Category" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">No Category</SelectItem>
                               {(categories ?? []).map((c) => (
-                                <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>

@@ -109,9 +109,9 @@ export default function AccountDetailPage({
   // Today's tasks state
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
-  const [taskAaId, setTaskAaId] = useState<number | null>(null);
+  const [taskAaName, setTaskAaName] = useState<string>("");
   const [taskName, setTaskName] = useState("");
-  const [taskCategoryId, setTaskCategoryId] = useState<string>("");
+  const [taskCategoryName, setTaskCategoryName] = useState<string>("");
   const [taskStatus, setTaskStatus] = useState("pending");
   const [taskFrequency, setTaskFrequency] = useState("daily");
   const [taskDate, setTaskDate] = useState("");
@@ -119,7 +119,7 @@ export default function AccountDetailPage({
   // Edit task state
   const [editTaskId, setEditTaskId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
-  const [editCategoryId, setEditCategoryId] = useState<string>("");
+  const [editCategoryName, setEditCategoryName] = useState<string>("");
   const [editStatus, setEditStatus] = useState("pending");
   const [editFrequency, setEditFrequency] = useState("daily");
   const [editDate, setEditDate] = useState("");
@@ -197,7 +197,7 @@ export default function AccountDetailPage({
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task added");
       setTaskName("");
-      setTaskCategoryId("");
+      setTaskCategoryName("");
       setTaskStatus("pending");
       setTaskFrequency("daily");
       setAddTaskOpen(false);
@@ -254,11 +254,13 @@ export default function AccountDetailPage({
 
   function handleAddTask(e: React.FormEvent) {
     e.preventDefault();
-    if (!taskName.trim() || !taskAaId) return;
+    if (!taskName.trim() || !taskAaName) return;
+    const aa = (account?.account_airdrops ?? []).find((a) => (a.airdrop?.name ?? "") === taskAaName);
+    if (!aa) return;
     createTaskMutation.mutate({
-      aaId: taskAaId,
+      aaId: aa.id,
       name: taskName.trim(),
-      category_id: taskCategoryId && taskCategoryId !== "none" ? Number(taskCategoryId) : undefined,
+      category_id: taskCategoryName && taskCategoryName !== "none" ? (categories ?? []).find((c) => c.name === taskCategoryName)?.id : undefined,
       status: taskStatus,
       frequency: taskFrequency,
       date: taskDate || selectedDate,
@@ -268,7 +270,7 @@ export default function AccountDetailPage({
   function startEditTask(task: Task) {
     setEditTaskId(task.id);
     setEditName(task.name);
-    setEditCategoryId(task.category_id?.toString() || "");
+    setEditCategoryName((categories ?? []).find((c) => c.id === task.category_id)?.name || "");
     setEditStatus(task.status);
     setEditFrequency(task.frequency || "daily");
     setEditDate(task.date ? task.date.split("T")[0] : "");
@@ -279,7 +281,7 @@ export default function AccountDetailPage({
     updateTaskMutation.mutate({
       taskId: editTaskId,
       name: editName || undefined,
-      category_id: editCategoryId && editCategoryId !== "none" ? Number(editCategoryId) : undefined,
+      category_id: editCategoryName && editCategoryName !== "none" ? (categories ?? []).find((c) => c.name === editCategoryName)?.id : undefined,
       status: editStatus,
       frequency: editFrequency,
       date: editDate || undefined,
@@ -388,12 +390,12 @@ export default function AccountDetailPage({
                     <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-white p-3">
                       <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Task name" />
                       <div className="flex flex-wrap gap-2">
-                        <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v ?? "")}>
+                        <Select value={editCategoryName} onValueChange={(v) => setEditCategoryName(v ?? "")}>
                           <SelectTrigger className="w-36"><SelectValue placeholder="Category" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">No Category</SelectItem>
                             {(categories ?? []).map((c) => (
-                              <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -590,11 +592,11 @@ export default function AccountDetailPage({
           <form onSubmit={handleAddTask} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Airdrop *</Label>
-              <Select value={taskAaId?.toString() || ""} onValueChange={(v) => setTaskAaId(v ? Number(v) : null)}>
+              <Select value={taskAaName} onValueChange={(v) => setTaskAaName(v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select airdrop" /></SelectTrigger>
                 <SelectContent>
                   {(account.account_airdrops ?? []).map((aa) => (
-                    <SelectItem key={aa.id} value={aa.id.toString()}>
+                    <SelectItem key={aa.id} value={aa.airdrop?.name ?? aa.id.toString()}>
                       {aa.airdrop?.name ?? "Unknown"}
                     </SelectItem>
                   ))}
@@ -608,12 +610,12 @@ export default function AccountDetailPage({
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Category</Label>
-                <Select value={taskCategoryId} onValueChange={(v) => setTaskCategoryId(v ?? "")}>
+                <Select value={taskCategoryName} onValueChange={(v) => setTaskCategoryName(v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Category</SelectItem>
                     {(categories ?? []).map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                      <SelectItem key={cat.id} value={cat.name}>
                         {cat.name}
                       </SelectItem>
                     ))}
@@ -652,7 +654,7 @@ export default function AccountDetailPage({
             </div>
             <DialogFooter>
               <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-              <Button type="submit" disabled={createTaskMutation.isPending || !taskAaId}>
+              <Button type="submit" disabled={createTaskMutation.isPending || !taskAaName}>
                 {createTaskMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Add
               </Button>
