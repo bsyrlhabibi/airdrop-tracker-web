@@ -318,7 +318,7 @@ export default function AirdropDetailPage({
               </div>
               <div className="flex flex-wrap gap-2">
                 <Select value={taskCategoryName} onValueChange={(v) => setTaskCategoryName(v ?? "")}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -331,7 +331,7 @@ export default function AirdropDetailPage({
                   </SelectContent>
                 </Select>
                 <Select value={taskStatus} onValueChange={(v) => setTaskStatus(v ?? "pending")}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-full sm:w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -342,11 +342,11 @@ export default function AirdropDetailPage({
                 </Select>
                 <div className="flex items-center gap-1">
                   <Label className="text-xs text-gray-500 whitespace-nowrap">Start:</Label>
-                  <Input type="date" value={taskStartDate} onChange={(e) => setTaskStartDate(e.target.value)} className="w-36" />
+                  <Input type="date" value={taskStartDate} onChange={(e) => setTaskStartDate(e.target.value)} className="w-full sm:w-36" />
                 </div>
                 <div className="flex items-center gap-1">
                   <Label className="text-xs text-gray-500 whitespace-nowrap">End:</Label>
-                  <Input type="date" value={taskEndDate} onChange={(e) => setTaskEndDate(e.target.value)} className="w-36" />
+                  <Input type="date" value={taskEndDate} onChange={(e) => setTaskEndDate(e.target.value)} className="w-full sm:w-36" />
                 </div>
               </div>
             </form>
@@ -368,7 +368,7 @@ export default function AirdropDetailPage({
                         <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Task name" />
                         <div className="flex flex-wrap gap-2">
                           <Select value={editCategoryName} onValueChange={(v) => setEditCategoryName(v ?? "")}>
-                            <SelectTrigger className="w-40">
+                            <SelectTrigger className="w-full sm:w-40">
                               <SelectValue placeholder="Category" />
                             </SelectTrigger>
                             <SelectContent>
@@ -379,7 +379,7 @@ export default function AirdropDetailPage({
                             </SelectContent>
                           </Select>
                           <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "pending")}>
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-full sm:w-32">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -390,11 +390,11 @@ export default function AirdropDetailPage({
                           </Select>
                           <div className="flex items-center gap-1">
                             <Label className="text-xs text-gray-500">Start:</Label>
-                            <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="w-36" />
+                            <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="w-full sm:w-36" />
                           </div>
                           <div className="flex items-center gap-1">
                             <Label className="text-xs text-gray-500">End:</Label>
-                            <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="w-36" />
+                            <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="w-full sm:w-36" />
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -428,11 +428,11 @@ export default function AirdropDetailPage({
                           )}
                         </div>
                       </div>
-                      <button onClick={() => startEdit(task)} className="shrink-0 text-gray-400 hover:text-blue-500">
-                        <Pencil className="h-3.5 w-3.5" />
+                      <button onClick={() => startEdit(task)} className="shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-blue-500">
+                        <Pencil className="h-4 w-4" />
                       </button>
-                      <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 text-gray-400 hover:text-red-500">
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-500">
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   );

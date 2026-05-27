@@ -397,7 +397,7 @@ export default function AccountDetailPage({
                       <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Task name" />
                       <div className="flex flex-wrap gap-2">
                         <Select value={editCategoryName} onValueChange={(v) => setEditCategoryName(v ?? "")}>
-                          <SelectTrigger className="w-36"><SelectValue placeholder="Category" /></SelectTrigger>
+                          <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Category" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">No Category</SelectItem>
                             {(categories ?? []).map((c) => (
@@ -406,7 +406,7 @@ export default function AccountDetailPage({
                           </SelectContent>
                         </Select>
                         <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "pending")}>
-                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-full sm:w-28"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {statusOptions.map((s) => (
                               <SelectItem key={s} value={s}>{s}</SelectItem>
@@ -414,7 +414,7 @@ export default function AccountDetailPage({
                           </SelectContent>
                         </Select>
                         <Select value={editFrequency} onValueChange={(v) => setEditFrequency(v ?? "daily")}>
-                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="w-full sm:w-28"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="once">Once</SelectItem>
                             <SelectItem value="daily">Daily</SelectItem>
@@ -422,16 +422,16 @@ export default function AccountDetailPage({
                             <SelectItem value="monthly">Monthly</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-36" />
+                        <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-full sm:w-36" />
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1">
                           <Label className="text-xs text-gray-500">Gas Spent:</Label>
-                          <Input type="number" step="0.0001" placeholder="0.001" value={editGasSpent} onChange={(e) => setEditGasSpent(e.target.value)} className="w-28" />
+                          <Input type="number" step="0.0001" placeholder="0.001" value={editGasSpent} onChange={(e) => setEditGasSpent(e.target.value)} className="w-full sm:w-28" />
                         </div>
                         <div className="flex items-center gap-1">
                           <Label className="text-xs text-gray-500">Tx Hash:</Label>
-                          <Input placeholder="0xabc..." value={editTxHash} onChange={(e) => setEditTxHash(e.target.value)} className="w-48" />
+                          <Input placeholder="0xabc..." value={editTxHash} onChange={(e) => setEditTxHash(e.target.value)} className="w-full sm:w-48" />
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -487,11 +487,11 @@ export default function AccountDetailPage({
                         ))}
                       </SelectContent>
                     </Select>
-                    <button onClick={() => startEditTask(task)} className="shrink-0 text-gray-400 hover:text-blue-500">
-                      <Pencil className="h-3.5 w-3.5" />
+                    <button onClick={() => startEditTask(task)} className="shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-blue-500">
+                      <Pencil className="h-4 w-4" />
                     </button>
-                    <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 text-gray-400 hover:text-red-500">
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-500">
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 );
@@ -633,7 +633,7 @@ export default function AccountDetailPage({
               <Label>Task Name *</Label>
               <Input placeholder="e.g. Bridge 0.1 ETH" value={taskName} onChange={(e) => setTaskName(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Category</Label>
                 <Select value={taskCategoryName} onValueChange={(v) => setTaskCategoryName(v ?? "")}>
@@ -661,7 +661,7 @@ export default function AccountDetailPage({
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Status</Label>
                 <Select value={taskStatus} onValueChange={(v) => setTaskStatus(v ?? "pending")}>

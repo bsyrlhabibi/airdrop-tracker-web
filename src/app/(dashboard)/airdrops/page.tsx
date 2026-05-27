@@ -264,10 +264,10 @@ export default function AirdropsPage() {
                         <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
                       </a>
                     )}
-                    <Button variant="ghost" size="icon-xs" onClick={(e) => { e.stopPropagation(); startEdit(airdrop); }}>
-                      <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); startEdit(airdrop); }}>
+                      <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon-xs" onClick={(e) => { e.stopPropagation(); setDeleteId(airdrop.id); }}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); setDeleteId(airdrop.id); }}>
                       <Trash2 className="h-3.5 w-3.5 text-red-500" />
                     </Button>
                   </div>
@@ -364,7 +364,7 @@ export default function AirdropsPage() {
               <Label>Name *</Label>
               <Input placeholder="e.g. EigenLayer" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Chain *</Label>
                 <Input placeholder="e.g. Ethereum" value={chain} onChange={(e) => setChain(e.target.value)} />
@@ -374,7 +374,7 @@ export default function AirdropsPage() {
                 <Input placeholder="e.g. DeFi" value={category} onChange={(e) => setCategory(e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Priority</Label>
                 <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
@@ -402,7 +402,7 @@ export default function AirdropsPage() {
               <Label>URL</Label>
               <Input placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Date Start</Label>
                 <Input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
@@ -439,7 +439,7 @@ export default function AirdropsPage() {
               <Label>Name</Label>
               <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Chain</Label>
                 <Input value={editChain} onChange={(e) => setEditChain(e.target.value)} />
@@ -449,7 +449,7 @@ export default function AirdropsPage() {
                 <Input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Priority</Label>
                 <Select value={editPriority} onValueChange={(v) => v && setEditPriority(v)}>
@@ -477,7 +477,7 @@ export default function AirdropsPage() {
               <Label>URL</Label>
               <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label>Date Start</Label>
                 <Input type="date" value={editDateStart} onChange={(e) => setEditDateStart(e.target.value)} />

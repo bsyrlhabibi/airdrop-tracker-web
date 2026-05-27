@@ -30,7 +30,7 @@ export function StatsCard({
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
         {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{description}</p>
         )}
       </CardContent>
     </Card>

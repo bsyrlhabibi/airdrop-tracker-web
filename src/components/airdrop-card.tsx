@@ -26,7 +26,7 @@ export function AirdropCard({ airdrop }: { airdrop: Airdrop }) {
       <Card className="transition-shadow hover:shadow-md cursor-pointer">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-base">{airdrop.name}</CardTitle>
+            <CardTitle className="text-base truncate">{airdrop.name}</CardTitle>
             {airdrop.url && (
               <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
             )}

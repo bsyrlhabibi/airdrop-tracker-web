@@ -270,7 +270,7 @@ export default function AccountsPage() {
                     key={c}
                     type="button"
                     onClick={() => setColor(c)}
-                    className={`h-7 w-7 rounded-full transition-all ${
+                    className={`h-8 w-8 rounded-full transition-all ${
                       color === c ? "ring-2 ring-offset-2 ring-gray-400" : ""
                     }`}
                     style={{ backgroundColor: c }}
@@ -326,7 +326,7 @@ export default function AccountsPage() {
                     key={c}
                     type="button"
                     onClick={() => setEditColor(c)}
-                    className={`h-7 w-7 rounded-full transition-all ${
+                    className={`h-8 w-8 rounded-full transition-all ${
                       editColor === c ? "ring-2 ring-offset-2 ring-gray-400" : ""
                     }`}
                     style={{ backgroundColor: c }}
