@@ -130,7 +130,7 @@ export default function DashboardPage() {
                       </span>
                       <span>
                         <Clock className="mr-1 inline h-3 w-3" />
-                        {acc.pending_tasks}P · {acc.ongoing_tasks}O · {acc.missed_tasks}M
+                        {acc.pending_tasks} pending · {acc.ongoing_tasks} ongoing · {acc.missed_tasks} missed
                       </span>
                       <span>
                         <Wallet className="mr-1 inline h-3 w-3" />
