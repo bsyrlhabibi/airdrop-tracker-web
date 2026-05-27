@@ -9,12 +9,12 @@ import type {
   Task,
   Wallet,
   DashboardSummary,
-  TaskTemplate,
   ComparisonData,
+  Category,
 } from "./types";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://airdrop-tracker-api-v1.fly.dev";
+  process.env.NEXT_PUBLIC_API_URL || "https://192-241-183-66.nip.io";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -81,6 +81,35 @@ export async function register(
     method: "POST",
     body: JSON.stringify({ email, password, name }),
   });
+}
+
+// Categories
+export async function getCategories(): Promise<Category[]> {
+  return request<Category[]>("/api/categories");
+}
+
+export async function createCategory(data: {
+  name: string;
+  color?: string;
+}): Promise<Category> {
+  return request<Category>("/api/categories", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCategory(
+  id: number,
+  data: Partial<{ name: string; color: string }>
+): Promise<Category> {
+  return request<Category>(`/api/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  return request<void>(`/api/categories/${id}`, { method: "DELETE" });
 }
 
 // Accounts
@@ -178,14 +207,14 @@ export async function deleteAirdrop(id: number): Promise<void> {
   return request<void>(`/api/airdrops/${id}`, { method: "DELETE" });
 }
 
-// Airdrop Tasks (checklist per airdrop)
+// Airdrop Tasks (global tasks per airdrop)
 export async function getAirdropTasks(airdropId: number): Promise<AirdropTask[]> {
   return request<AirdropTask[]>(`/api/airdrops/${airdropId}/tasks`);
 }
 
 export async function createAirdropTask(
   airdropId: number,
-  data: { description: string; frequency?: string }
+  data: { name: string; category_id?: number; status?: string; date?: string }
 ): Promise<AirdropTask> {
   return request<AirdropTask>(`/api/airdrops/${airdropId}/tasks`, {
     method: "POST",
@@ -193,18 +222,18 @@ export async function createAirdropTask(
   });
 }
 
-export async function toggleAirdropTaskComplete(taskId: number): Promise<AirdropTask> {
-  return request<AirdropTask>(`/api/airdrop-tasks/${taskId}/complete`, {
+export async function updateAirdropTask(
+  taskId: number,
+  data: Partial<{ name: string; category_id: number; status: string; date: string }>
+): Promise<AirdropTask> {
+  return request<AirdropTask>(`/api/airdrop-tasks/${taskId}`, {
     method: "PUT",
+    body: JSON.stringify(data),
   });
 }
 
 export async function deleteAirdropTask(taskId: number): Promise<void> {
   return request<void>(`/api/airdrop-tasks/${taskId}`, { method: "DELETE" });
-}
-
-export async function resetAirdropTasks(airdropId: number): Promise<void> {
-  return request<void>(`/api/airdrops/${airdropId}/tasks/reset`, { method: "PUT" });
 }
 
 // Account Airdrops (assign/unassign)
@@ -234,27 +263,29 @@ export async function removeAirdropFromAccount(
   );
 }
 
-// Tasks (now under account-airdrops)
+// Tasks (per account-airdrop)
 export async function getTasks(accountAirdropId: number): Promise<Task[]> {
-  return request<Task[]>(`/api/account_airdrops/${accountAirdropId}/tasks`);
+  return request<Task[]>(`/api/account-airdrops/${accountAirdropId}/tasks`);
 }
 
 export async function createTask(
   accountAirdropId: number,
-  data: { description: string; frequency: string; wallet_id?: number }
+  data: { name: string; category_id?: number; status?: string; date?: string }
 ): Promise<Task> {
-  return request<Task>(`/api/account_airdrops/${accountAirdropId}/tasks`, {
+  return request<Task>(`/api/account-airdrops/${accountAirdropId}/tasks`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function completeTask(taskId: number): Promise<Task> {
-  return request<Task>(`/api/tasks/${taskId}/complete`, { method: "PUT" });
-}
-
-export async function resetTask(taskId: number): Promise<Task> {
-  return request<Task>(`/api/tasks/${taskId}/reset`, { method: "PUT" });
+export async function updateTask(
+  taskId: number,
+  data: Partial<{ name: string; category_id: number; status: string; date: string }>
+): Promise<Task> {
+  return request<Task>(`/api/tasks/${taskId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteTask(taskId: number): Promise<void> {
@@ -291,9 +322,4 @@ export async function getDashboard(): Promise<DashboardSummary> {
 // Comparison
 export async function getComparison(): Promise<ComparisonData> {
   return request<ComparisonData>("/api/dashboard/comparison");
-}
-
-// Task Templates
-export async function getTaskTemplates(): Promise<TaskTemplate[]> {
-  return request<TaskTemplate[]>("/api/task_templates");
 }

@@ -8,13 +8,21 @@ import {
   deleteAirdrop,
   getAirdropTasks,
   createAirdropTask,
-  toggleAirdropTaskComplete,
+  updateAirdropTask,
   deleteAirdropTask,
-  resetAirdropTasks,
+  getCategories,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
@@ -23,14 +31,12 @@ import {
   Trash2,
   Loader2,
   Plus,
-  CheckCircle2,
-  Circle,
-  RotateCcw,
+  Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { Airdrop, AirdropTask } from "@/lib/types";
+import type { AirdropTask } from "@/lib/types";
 
 const priorityColors: Record<string, string> = {
   high: "bg-red-100 text-red-700",
@@ -38,11 +44,13 @@ const priorityColors: Record<string, string> = {
   low: "bg-green-100 text-green-700",
 };
 
+const statusOptions = ["pending", "ongoing", "finish", "cancel"];
+
 const statusColors: Record<string, string> = {
-  active: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  missed: "bg-red-100 text-red-700",
-  upcoming: "bg-gray-100 text-gray-700",
+  pending: "bg-gray-100 text-gray-700",
+  ongoing: "bg-yellow-100 text-yellow-700",
+  finish: "bg-green-100 text-green-700",
+  cancel: "bg-red-100 text-red-700",
 };
 
 export default function AirdropDetailPage({
@@ -53,7 +61,19 @@ export default function AirdropDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [newTask, setNewTask] = useState("");
+
+  // Add task form state
+  const [taskName, setTaskName] = useState("");
+  const [taskCategoryId, setTaskCategoryId] = useState<string>("");
+  const [taskStatus, setTaskStatus] = useState("pending");
+  const [taskDate, setTaskDate] = useState("");
+
+  // Edit task state
+  const [editTaskId, setEditTaskId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategoryId, setEditCategoryId] = useState<string>("");
+  const [editStatus, setEditStatus] = useState("pending");
+  const [editDate, setEditDate] = useState("");
 
   const { data: airdrop, isLoading } = useQuery({
     queryKey: ["airdrop", id],
@@ -63,6 +83,11 @@ export default function AirdropDetailPage({
   const { data: tasks } = useQuery({
     queryKey: ["airdrop-tasks", id],
     queryFn: () => getAirdropTasks(Number(id)),
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
   });
 
   const deleteMutation = useMutation({
@@ -76,20 +101,33 @@ export default function AirdropDetailPage({
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (description: string) =>
-      createAirdropTask(Number(id), { description }),
+    mutationFn: (data: { name: string; category_id?: number; status: string; date?: string }) =>
+      createAirdropTask(Number(id), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
-      setNewTask("");
+      setTaskName("");
+      setTaskCategoryId("");
+      setTaskStatus("pending");
+      setTaskDate("");
+      toast.success("Task added");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const toggleMutation = useMutation({
-    mutationFn: (taskId: number) => toggleAirdropTaskComplete(taskId),
+  const updateTaskMutation = useMutation({
+    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; date?: string }) =>
+      updateAirdropTask(data.taskId, {
+        name: data.name,
+        category_id: data.category_id,
+        status: data.status,
+        date: data.date,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
+      setEditTaskId(null);
+      toast.success("Task updated");
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const deleteTaskMutation = useMutation({
@@ -100,18 +138,39 @@ export default function AirdropDetailPage({
     },
   });
 
-  const resetMutation = useMutation({
-    mutationFn: () => resetAirdropTasks(Number(id)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
-      toast.success("All tasks reset");
-    },
-  });
-
   function handleAddTask(e: React.FormEvent) {
     e.preventDefault();
-    if (!newTask.trim()) return;
-    createTaskMutation.mutate(newTask.trim());
+    if (!taskName.trim()) return;
+    createTaskMutation.mutate({
+      name: taskName.trim(),
+      category_id: taskCategoryId ? Number(taskCategoryId) : undefined,
+      status: taskStatus,
+      date: taskDate || undefined,
+    });
+  }
+
+  function handleUpdateTask(taskId: number) {
+    if (!editName.trim()) return;
+    updateTaskMutation.mutate({
+      taskId,
+      name: editName.trim(),
+      category_id: editCategoryId ? Number(editCategoryId) : undefined,
+      status: editStatus,
+      date: editDate || undefined,
+    });
+  }
+
+  function startEdit(task: AirdropTask) {
+    setEditTaskId(task.id);
+    setEditName(task.name);
+    setEditCategoryId(task.category_id?.toString() || "");
+    setEditStatus(task.status);
+    setEditDate(task.date ? task.date.split("T")[0] : "");
+  }
+
+  function getCategoryName(id: number | null | undefined) {
+    if (!id || !categories) return null;
+    return categories.find((c) => c.id === id);
   }
 
   if (isLoading) {
@@ -132,9 +191,6 @@ export default function AirdropDetailPage({
       </div>
     );
   }
-
-  const completedCount = (tasks ?? []).filter((t) => t.is_completed).length;
-  const totalCount = (tasks ?? []).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -164,27 +220,17 @@ export default function AirdropDetailPage({
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">{airdrop.chain}</Badge>
-              <Badge
-                variant="secondary"
-                className={cn("text-xs", priorityColors[airdrop.priority])}
-              >
+              <Badge variant="secondary" className={cn("text-xs", priorityColors[airdrop.priority])}>
                 {airdrop.priority}
               </Badge>
-              <Badge
-                variant="secondary"
-                className={cn("text-xs", statusColors[airdrop.status])}
-              >
+              <Badge variant="secondary" className={cn("text-xs", statusColors[airdrop.status] || "bg-gray-100 text-gray-700")}>
                 {airdrop.status}
               </Badge>
               {airdrop.category && (
-                <Badge variant="outline" className="text-xs">
-                  {airdrop.category}
-                </Badge>
+                <Badge variant="outline" className="text-xs">{airdrop.category}</Badge>
               )}
             </div>
-            {airdrop.notes && (
-              <p className="text-sm text-gray-600">{airdrop.notes}</p>
-            )}
+            {airdrop.notes && <p className="text-sm text-gray-600">{airdrop.notes}</p>}
             {airdrop.deadline && (
               <p className="text-xs text-gray-500">
                 Deadline: {new Date(airdrop.deadline).toLocaleDateString()}
@@ -197,95 +243,169 @@ export default function AirdropDetailPage({
       {/* Tasks */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">
-              Tasks
-              {totalCount > 0 && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  ({completedCount}/{totalCount})
-                </span>
-              )}
-            </CardTitle>
-            {totalCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => resetMutation.mutate()}
-                disabled={resetMutation.isPending}
-              >
-                <RotateCcw className="mr-1 h-3.5 w-3.5" />
-                Reset
-              </Button>
+          <CardTitle className="text-base">
+            Tasks
+            {(tasks ?? []).length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({(tasks ?? []).length})
+              </span>
             )}
-          </div>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {/* Add task form */}
-            <form onSubmit={handleAddTask} className="flex gap-2">
-              <Input
-                placeholder="Add a task... (e.g. Bridge 0.1 ETH)"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!newTask.trim() || createTaskMutation.isPending}
-              >
-                {createTaskMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-              </Button>
+            <form onSubmit={handleAddTask} className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Task name... (e.g. Bridge 0.1 ETH)"
+                  value={taskName}
+                  onChange={(e) => setTaskName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" size="sm" disabled={!taskName.trim() || createTaskMutation.isPending}>
+                  {createTaskMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Select value={taskCategoryId} onValueChange={(v) => setTaskCategoryId(v ?? "")}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Category</SelectItem>
+                    {(categories ?? []).map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={taskStatus} onValueChange={(v) => setTaskStatus(v ?? "pending")}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        <Badge variant="secondary" className={cn("text-xs", statusColors[s])}>
+                          {s}
+                        </Badge>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="date"
+                  value={taskDate}
+                  onChange={(e) => setTaskDate(e.target.value)}
+                  className="w-40"
+                />
+              </div>
             </form>
 
             {/* Task list */}
             {(tasks ?? []).length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                No tasks yet. Add tasks above as a checklist for this airdrop.
+                No tasks yet. Add tasks above.
               </p>
             ) : (
               <div className="flex flex-col gap-1 pt-2">
-                {(tasks ?? []).map((task) => (
-                  <div
-                    key={task.id}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                      task.is_completed ? "bg-green-50" : "bg-gray-50 hover:bg-gray-100"
-                    )}
-                  >
-                    <button
-                      onClick={() => toggleMutation.mutate(task.id)}
-                      className="shrink-0"
+                {(tasks ?? []).map((task) => {
+                  const cat = getCategoryName(task.category_id);
+                  const isEditing = editTaskId === task.id;
+
+                  if (isEditing) {
+                    return (
+                      <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="Task name"
+                        />
+                        <div className="flex gap-2">
+                          <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v ?? "")}>
+                            <SelectTrigger className="w-40">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Category</SelectItem>
+                              {(categories ?? []).map((c) => (
+                                <SelectItem key={c.id} value={c.id.toString()}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "pending")}>
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map((s) => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            className="w-40"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleUpdateTask(task.id)} disabled={updateTaskMutation.isPending}>
+                            Save
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 hover:bg-gray-100 transition-colors"
                     >
-                      {task.is_completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-gray-400" />
-                      )}
-                    </button>
-                    <span
-                      className={cn(
-                        "flex-1 text-sm",
-                        task.is_completed && "text-muted-foreground line-through"
-                      )}
-                    >
-                      {task.description}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {task.frequency}
-                    </Badge>
-                    <button
-                      onClick={() => deleteTaskMutation.mutate(task.id)}
-                      className="shrink-0 text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{task.name}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          {cat && (
+                            <Badge variant="outline" className="text-xs">
+                              <div className="h-2 w-2 rounded-full mr-1" style={{ backgroundColor: cat.color }} />
+                              {cat.name}
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className={cn("text-xs", statusColors[task.status])}>
+                            {task.status}
+                          </Badge>
+                          {task.date && (
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(task.date).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={() => startEdit(task)} className="shrink-0 text-gray-400 hover:text-blue-500">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 text-gray-400 hover:text-red-500">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -300,9 +420,7 @@ export default function AirdropDetailPage({
           onClick={() => deleteMutation.mutate()}
           disabled={deleteMutation.isPending}
         >
-          {deleteMutation.isPending && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
+          {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Trash2 className="mr-2 h-4 w-4" />
           Delete Airdrop
         </Button>

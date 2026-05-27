@@ -44,7 +44,7 @@ export interface Airdrop {
   chain: string;
   category: string;
   priority: "low" | "medium" | "high";
-  status: "active" | "completed" | "missed" | "upcoming";
+  status: string;
   url: string;
   notes: string;
   deadline: string | null;
@@ -64,34 +64,36 @@ export interface AccountAirdrop {
   tasks?: Task[];
 }
 
-export interface TaskTemplate {
+export interface Category {
   id: number;
+  user_id: number;
   name: string;
-  description: string;
-  tasks: { description: string; frequency: string }[];
+  color: string;
+  created_at: string;
 }
 
 export interface Task {
   id: number;
   account_airdrop_id: number;
-  description: string;
-  frequency: string;
-  is_completed: boolean;
-  completed_at: string | null;
-  next_due: string | null;
-  wallet_id: number | null;
+  category_id: number | null;
+  category?: Category;
+  name: string;
+  status: string;
+  date: string | null;
   gas_spent: number;
   tx_hash: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface AirdropTask {
   id: number;
   airdrop_id: number;
-  description: string;
-  frequency: string;
-  is_completed: boolean;
-  completed_at: string | null;
+  category_id: number | null;
+  category?: Category;
+  name: string;
+  status: string;
+  date: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
