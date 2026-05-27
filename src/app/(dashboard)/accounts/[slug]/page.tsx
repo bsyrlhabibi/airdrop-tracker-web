@@ -4,6 +4,7 @@ import { useState, use, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAccount,
+  getAccounts,
   getAirdrops,
   getAirdropTasks,
   assignAirdrop,
@@ -162,7 +163,7 @@ export default function AccountDetailPage({
 
   // Mutations
   const assignMutation = useMutation({
-    mutationFn: (airdropId: number) => assignAirdrop(id, { airdrop_id: airdropId }),
+    mutationFn: (airdropId: number) => assignAirdrop(accountId!, { airdrop_id: airdropId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", accountId] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
@@ -175,7 +176,7 @@ export default function AccountDetailPage({
   });
 
   const removeMutation = useMutation({
-    mutationFn: (airdropId: number) => removeAirdropFromAccount(id, airdropId),
+    mutationFn: (airdropId: number) => removeAirdropFromAccount(accountId!, airdropId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", accountId] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
