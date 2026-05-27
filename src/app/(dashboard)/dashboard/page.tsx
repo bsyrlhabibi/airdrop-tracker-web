@@ -73,7 +73,7 @@ export default function DashboardPage() {
           title="Total Tasks"
           value={stats?.total_tasks ?? 0}
           icon={Activity}
-          description={`${stats?.pending_tasks ?? 0} pending`}
+          description={`${stats?.pending_tasks ?? 0} pending · ${stats?.ongoing_tasks ?? 0} ongoing · ${stats?.missed_tasks ?? 0} missed`}
         />
         <StatsCard
           title="Completed"
@@ -127,6 +127,10 @@ export default function DashboardPage() {
                       <span>
                         <CheckCircle2 className="mr-1 inline h-3 w-3" />
                         {acc.completed_tasks}/{acc.total_tasks} tasks
+                      </span>
+                      <span>
+                        <Clock className="mr-1 inline h-3 w-3" />
+                        {acc.pending_tasks}P · {acc.ongoing_tasks}O · {acc.missed_tasks}M
                       </span>
                       <span>
                         <Wallet className="mr-1 inline h-3 w-3" />

@@ -35,6 +35,8 @@ export interface AccountStats {
   total_tasks: number;
   completed_tasks: number;
   pending_tasks: number;
+  ongoing_tasks: number;
+  missed_tasks: number;
   total_wallets: number;
 }
 
@@ -121,6 +123,8 @@ export interface DashboardSummary {
   total_tasks: number;
   completed_tasks: number;
   pending_tasks: number;
+  ongoing_tasks: number;
+  missed_tasks: number;
   total_wallets: number;
   total_accounts: number;
   accounts: AccountStats[];
