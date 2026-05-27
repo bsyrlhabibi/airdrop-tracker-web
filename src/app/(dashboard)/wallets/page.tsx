@@ -115,13 +115,11 @@ export default function WalletsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Wallets</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your wallet addresses
-          </p>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Wallets</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground">Manage your wallet addresses</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
@@ -189,7 +187,7 @@ export default function WalletsPage() {
           </Table>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8 lg:py-12">
           <Wallet className="mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium text-gray-900">No wallets yet</h3>
           <p className="mb-4 text-sm text-muted-foreground">

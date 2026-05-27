@@ -150,11 +150,11 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 lg:gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Accounts</h1>
           <p className="text-sm text-gray-500">Manage your sybil accounts</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -171,7 +171,7 @@ export default function AccountsPage() {
 
       {/* Account Grid */}
       {accounts && accounts.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {accounts.map((account) => (
             <Card
               key={account.id}
@@ -231,7 +231,7 @@ export default function AccountsPage() {
           ))}
         </div>
       ) : (
-        <Card className="flex flex-col items-center justify-center py-12">
+        <Card className="flex flex-col items-center justify-center py-8 lg:py-12">
           <Users className="mb-3 h-10 w-10 text-gray-300" />
           <p className="text-sm text-gray-500">No accounts yet</p>
           <Button

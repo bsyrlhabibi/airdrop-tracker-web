@@ -96,9 +96,9 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 lg:gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Categories</h1>
         <p className="text-sm text-gray-500 mt-1">Manage task categories for your airdrops</p>
       </div>
 
@@ -137,14 +137,14 @@ export default function CategoriesPage() {
       {/* Category list */}
       {(categories ?? []).length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
+          <CardContent className="flex flex-col items-center justify-center py-8 lg:py-12">
             <Tag className="mb-3 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-500">No categories yet</p>
             <p className="text-xs text-gray-400 mt-1">Create categories to organize your tasks</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {(categories ?? []).map((cat) => {
             const isEditing = editId === cat.id;
 

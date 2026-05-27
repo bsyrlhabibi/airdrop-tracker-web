@@ -41,10 +41,10 @@ export default function DashboardPage() {
   const recentAirdrops = (airdrops ?? []).slice(0, 6);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500">
             Overview of your airdrop tracking
           </p>
@@ -62,7 +62,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatsCard
           title="Total Airdrops"
           value={stats?.total_airdrops ?? 0}
@@ -105,7 +105,7 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               {stats.accounts.map((acc) => (
                 <div
                   key={acc.id}
@@ -156,7 +156,7 @@ export default function DashboardPage() {
               View all
             </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             {recentAirdrops.map((airdrop) => (
               <AirdropCard key={airdrop.id} airdrop={airdrop} />
             ))}
