@@ -67,7 +67,7 @@ export default function DashboardPage() {
           title="Total Airdrops"
           value={stats?.total_airdrops ?? 0}
           icon={Rocket}
-          description={`${stats?.active_airdrops ?? 0} active`}
+          description={`${stats?.active_airdrops ?? 0} active · ${stats?.upcoming_airdrops ?? 0} upcoming · ${stats?.ended_airdrops ?? 0} ended · ${stats?.missed_airdrops ?? 0} missed`}
         />
         <StatsCard
           title="Total Tasks"

@@ -120,6 +120,9 @@ export interface Wallet {
 export interface DashboardSummary {
   total_airdrops: number;
   active_airdrops: number;
+  upcoming_airdrops: number;
+  ended_airdrops: number;
+  missed_airdrops: number;
   total_tasks: number;
   completed_tasks: number;
   pending_tasks: number;
