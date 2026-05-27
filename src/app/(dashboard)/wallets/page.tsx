@@ -134,6 +134,7 @@ export default function WalletsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Account</TableHead>
                 <TableHead>Label</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>Chain</TableHead>
@@ -143,6 +144,16 @@ export default function WalletsPage() {
             <TableBody>
               {wallets.map((wallet) => (
                 <TableRow key={wallet.id}>
+                  <TableCell>
+                    {wallet.account ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: wallet.account.color }} />
+                        <span className="text-sm">{wallet.account.name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{wallet.label}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
