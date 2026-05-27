@@ -164,6 +164,7 @@ export async function createAirdrop(data: {
   chain: string;
   category: string;
   priority: string;
+  status?: string;
   url?: string;
   date_start?: string;
   date_end?: string;
