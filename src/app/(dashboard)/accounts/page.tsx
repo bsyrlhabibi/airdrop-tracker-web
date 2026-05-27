@@ -36,6 +36,7 @@ import {
   Download,
 } from "lucide-react";
 import { exportToExcel } from "@/lib/export";
+import { slugify } from "@/lib/utils";
 
 const COLORS = [
   "#3B82F6", // blue
@@ -175,7 +176,7 @@ export default function AccountsPage() {
             <Card
               key={account.id}
               className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer"
-              onClick={() => router.push(`/accounts/${account.id}`)}
+              onClick={() => router.push(`/accounts/${slugify(account.name)}`)}
             >
               {/* Color bar */}
               <div

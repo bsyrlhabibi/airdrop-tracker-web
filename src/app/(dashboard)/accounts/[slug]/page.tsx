@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAccount,
@@ -54,7 +54,7 @@ import {
   Pencil,
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 import type { AccountAirdrop, AirdropTask, Task } from "@/lib/types";
 
 const statusOptions = ["pending", "ongoing", "finish", "missed"];
@@ -76,11 +76,25 @@ const airdropTaskStatusColors: Record<string, string> = {
 export default function AccountDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id: idStr } = use(params);
-  const id = Number(idStr);
+  const { slug } = use(params);
   const queryClient = useQueryClient();
+
+  // Resolve slug → account ID
+  const { data: allAccounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: getAccounts,
+  });
+
+  const accountId = useMemo(() => {
+    if (!allAccounts) return null;
+    const found = allAccounts.find((a) => slugify(a.name) === slug);
+    if (found) return found.id;
+    const num = Number(slug);
+    if (!isNaN(num)) return num;
+    return null;
+  }, [allAccounts, slug]);
 
   // State
   const [assignOpen, setAssignOpen] = useState(false);
@@ -111,8 +125,9 @@ export default function AccountDetailPage({
 
   // Queries
   const { data: account, isLoading } = useQuery({
-    queryKey: ["account", id],
-    queryFn: () => getAccount(id),
+    queryKey: ["account", accountId],
+    queryFn: () => getAccount(accountId!),
+    enabled: !!accountId,
   });
 
   const { data: allAirdrops } = useQuery({
@@ -126,8 +141,9 @@ export default function AccountDetailPage({
   });
 
   const { data: todayTasks } = useQuery({
-    queryKey: ["today-tasks", id, selectedDate],
-    queryFn: () => getDateTasks(id, selectedDate),
+    queryKey: ["today-tasks", accountId, selectedDate],
+    queryFn: () => getDateTasks(accountId!, selectedDate),
+    enabled: !!accountId,
   });
 
   const assignedIds = new Set((account?.account_airdrops ?? []).map((aa) => aa.airdrop_id));
@@ -148,10 +164,10 @@ export default function AccountDetailPage({
   const assignMutation = useMutation({
     mutationFn: (airdropId: number) => assignAirdrop(id, { airdrop_id: airdropId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", accountId] });
       toast.success("Airdrop assigned");
       setAssignOpen(false);
     },
@@ -161,10 +177,10 @@ export default function AccountDetailPage({
   const removeMutation = useMutation({
     mutationFn: (airdropId: number) => removeAirdropFromAccount(id, airdropId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", accountId] });
       toast.success("Airdrop removed");
       setRemoveAaId(null);
     },
@@ -175,8 +191,8 @@ export default function AccountDetailPage({
     mutationFn: (data: { aaId: number; name: string; category_id?: number; status: string; frequency: string; date?: string }) =>
       createTask(data.aaId, { name: data.name, category_id: data.category_id, status: data.status, frequency: data.frequency, date: data.date }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
-      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", accountId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task added");
       setTaskName("");
@@ -192,8 +208,8 @@ export default function AccountDetailPage({
     mutationFn: (data: { taskId: number; name?: string; category_id?: number; status?: string; frequency?: string; date?: string }) =>
       updateTask(data.taskId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
-      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", accountId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setEditTaskId(null);
     },
@@ -203,8 +219,8 @@ export default function AccountDetailPage({
   const deleteTaskMutation = useMutation({
     mutationFn: (taskId: number) => deleteTask(taskId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
-      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", accountId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task deleted");
     },
@@ -213,7 +229,7 @@ export default function AccountDetailPage({
   const createWalletMutation = useMutation({
     mutationFn: createWallet,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Wallet added");
@@ -228,7 +244,7 @@ export default function AccountDetailPage({
   const deleteWalletMutation = useMutation({
     mutationFn: (walletId: number) => deleteWallet(walletId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["account", accountId] });
       queryClient.invalidateQueries({ queryKey: ["wallets"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Wallet deleted");
@@ -280,7 +296,7 @@ export default function AccountDetailPage({
       toast.error("All wallet fields required");
       return;
     }
-    createWalletMutation.mutate({ label: walletLabel, address: walletAddress, chain: walletChain, account_id: id });
+    createWalletMutation.mutate({ label: walletLabel, address: walletAddress, chain: walletChain, account_id: accountId! });
   }
 
   // Calculate stats for today's tasks
