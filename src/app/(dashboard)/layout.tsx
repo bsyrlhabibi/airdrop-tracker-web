@@ -50,7 +50,7 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className="flex flex-1 flex-col">
         <Navbar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
+        <main className="flex-1 p-4 lg:p-6 min-h-[calc(100vh-3.5rem)]">{children}</main>
       </div>
     </div>
   );
