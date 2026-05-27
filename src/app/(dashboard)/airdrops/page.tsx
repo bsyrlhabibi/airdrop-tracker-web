@@ -33,7 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink, ChevronDown, Pencil } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -248,7 +248,7 @@ export default function AirdropsPage() {
             <Card
               key={airdrop.id}
               className="transition-shadow hover:shadow-md cursor-pointer"
-              onClick={() => router.push(`/airdrops/${airdrop.id}`)}
+              onClick={() => router.push(`/airdrops/${slugify(airdrop.name)}`)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">

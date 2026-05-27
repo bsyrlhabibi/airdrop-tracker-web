@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAirdrop,
+  getAirdrops,
   deleteAirdrop,
   getAirdropTasks,
   createAirdropTask,
@@ -12,6 +13,7 @@ import {
   getCategories,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,11 +64,34 @@ const taskStatusColors: Record<string, string> = {
 export default function AirdropDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = use(params);
+  const { slug } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  // Resolve slug → airdrop ID
+  const { data: allAirdrops } = useQuery({
+    queryKey: ["airdrops"],
+    queryFn: getAirdrops,
+  });
+
+  const airdropId = useMemo(() => {
+    if (!allAirdrops) return null;
+    // Try match by slugified name first
+    const found = allAirdrops.find((a) => slugify(a.name) === slug);
+    if (found) return found.id;
+    // Fallback: try as number (backward compat)
+    const num = Number(slug);
+    if (!isNaN(num)) return num;
+    return null;
+  }, [allAirdrops, slug]);
+
+  const { data: airdrop, isLoading: airdropLoading } = useQuery({
+    queryKey: ["airdrop", airdropId],
+    queryFn: () => getAirdrop(airdropId!),
+    enabled: !!airdropId,
+  });
 
   // Add task form
   const [taskName, setTaskName] = useState("");
@@ -83,14 +108,10 @@ export default function AirdropDetailPage({
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
 
-  const { data: airdrop, isLoading } = useQuery({
-    queryKey: ["airdrop", id],
-    queryFn: () => getAirdrop(Number(id)),
-  });
-
   const { data: tasks } = useQuery({
-    queryKey: ["airdrop-tasks", id],
-    queryFn: () => getAirdropTasks(Number(id)),
+    queryKey: ["airdrop-tasks", airdropId],
+    queryFn: () => getAirdropTasks(airdropId!),
+    enabled: !!airdropId,
   });
 
   const { data: categories } = useQuery({
@@ -99,7 +120,7 @@ export default function AirdropDetailPage({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteAirdrop(Number(id)),
+    mutationFn: () => deleteAirdrop(airdropId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrops"] });
       toast.success("Airdrop deleted");
@@ -110,9 +131,9 @@ export default function AirdropDetailPage({
 
   const createTaskMutation = useMutation({
     mutationFn: (data: { name: string; category_id?: number; status: string; start_date?: string; end_date?: string }) =>
-      createAirdropTask(Number(id), data),
+      createAirdropTask(airdropId!, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", airdropId] });
       setTaskName("");
       setTaskCategoryId("");
       setTaskStatus("pending");
@@ -133,7 +154,7 @@ export default function AirdropDetailPage({
         end_date: data.end_date,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", airdropId] });
       setEditTaskId(null);
       toast.success("Task updated");
     },
@@ -143,7 +164,7 @@ export default function AirdropDetailPage({
   const deleteTaskMutation = useMutation({
     mutationFn: (taskId: number) => deleteAirdropTask(taskId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", airdropId] });
       toast.success("Task deleted");
     },
   });
@@ -191,7 +212,15 @@ export default function AirdropDetailPage({
     return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 
-  if (isLoading) {
+  if (airdropLoading || (!airdropId && allAirdrops)) {
+    if (!airdropId && allAirdrops) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-gray-500">Airdrop not found</p>
+          <Button variant="outline" className="mt-3" render={<Link href="/airdrops" />}>Back to Airdrops</Button>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
