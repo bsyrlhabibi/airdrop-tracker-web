@@ -129,16 +129,3 @@ export interface DashboardSummary {
   total_accounts: number;
   accounts: AccountStats[];
 }
-
-export interface ComparisonData {
-  accounts: {
-    id: number;
-    name: string;
-    color: string;
-    total_airdrops: number;
-    completed_airdrops: number;
-    total_tasks: number;
-    completed_tasks: number;
-    completion_pct: number;
-  }[];
-}

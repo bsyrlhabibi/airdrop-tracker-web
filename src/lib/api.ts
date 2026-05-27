@@ -9,7 +9,6 @@ import type {
   Task,
   Wallet,
   DashboardSummary,
-  ComparisonData,
   Category,
 } from "./types";
 
@@ -151,16 +150,6 @@ export async function deleteAccount(
   });
 }
 
-export async function cloneAccount(
-  id: number,
-  data: { name: string; color?: string }
-): Promise<Account> {
-  return request<Account>(`/api/accounts/${id}/clone`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
 // Airdrops (global catalog)
 export async function getAirdrops(): Promise<Airdrop[]> {
   return request<Airdrop[]>("/api/airdrops");
@@ -268,10 +257,6 @@ export async function removeAirdropFromAccount(
 }
 
 // Tasks (per account-airdrop)
-export async function getTasks(accountAirdropId: number): Promise<Task[]> {
-  return request<Task[]>(`/api/account-airdrops/${accountAirdropId}/tasks`);
-}
-
 export async function createTask(
   accountAirdropId: number,
   data: { name: string; category_id?: number; status?: string; frequency?: string; date?: string }
@@ -297,10 +282,6 @@ export async function deleteTask(taskId: number): Promise<void> {
 }
 
 // Today's tasks (per account)
-export async function getTodayTasks(accountId: number): Promise<Task[]> {
-  return request<Task[]>(`/api/accounts/${accountId}/tasks/today`);
-}
-
 export async function getDateTasks(accountId: number, date: string): Promise<Task[]> {
   return request<Task[]>(`/api/accounts/${accountId}/tasks/by-date?date=${date}`);
 }
@@ -332,7 +313,4 @@ export async function getDashboard(): Promise<DashboardSummary> {
   return request<DashboardSummary>("/api/dashboard");
 }
 
-// Comparison
-export async function getComparison(): Promise<ComparisonData> {
-  return request<ComparisonData>("/api/dashboard/comparison");
-}
+
