@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAirdrops,
   createAirdrop,
+  updateAirdrop,
   deleteAirdrop,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,14 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Airdrop } from "@/lib/types";
 
 const priorityColors: Record<string, string> = {
@@ -41,11 +48,13 @@ const priorityColors: Record<string, string> = {
   low: "bg-green-100 text-green-700 border-green-200",
 };
 
+const airdropStatusOptions = ["active", "end", "upcoming", "missed"];
+
 const statusColors: Record<string, string> = {
   active: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
+  end: "bg-gray-200 text-gray-600",
+  upcoming: "bg-purple-100 text-purple-700",
   missed: "bg-red-100 text-red-700",
-  upcoming: "bg-gray-100 text-gray-700",
 };
 
 export default function AirdropsPage() {
@@ -76,6 +85,17 @@ export default function AirdropsPage() {
       toast.success("Airdrop created");
       resetForm();
       setCreateOpen(false);
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      updateAirdrop(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Status updated");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -119,9 +139,7 @@ export default function AirdropsPage() {
     return matchesSearch && matchesChain;
   });
 
-  const chains = [...new Set((airdrops ?? []).map((a) => a.chain))].filter(
-    Boolean
-  );
+  const chains = [...new Set((airdrops ?? []).map((a) => a.chain))].filter(Boolean);
 
   if (isLoading) {
     return (
@@ -168,9 +186,7 @@ export default function AirdropsPage() {
             <SelectContent>
               <SelectItem value="__all__">All chains</SelectItem>
               {chains.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
+                <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -212,31 +228,55 @@ export default function AirdropsPage() {
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {airdrop.chain}
-                  </Badge>
+                  <Badge variant="outline" className="text-xs">{airdrop.chain}</Badge>
                   {airdrop.category && (
-                    <Badge variant="secondary" className="text-xs">
-                      {airdrop.category}
-                    </Badge>
+                    <Badge variant="secondary" className="text-xs">{airdrop.category}</Badge>
                   )}
-                  <Badge
-                    variant="secondary"
-                    className={cn("text-xs", priorityColors[airdrop.priority])}
-                  >
+                  <Badge variant="secondary" className={cn("text-xs", priorityColors[airdrop.priority])}>
                     {airdrop.priority}
                   </Badge>
-                  <Badge
-                    variant="secondary"
-                    className={cn("text-xs", statusColors[airdrop.status])}
-                  >
-                    {airdrop.status}
-                  </Badge>
+
+                  {/* Status — clickable dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 outline-none"
+                    >
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-xs cursor-pointer hover:opacity-80 transition-opacity",
+                          statusColors[airdrop.status] || "bg-gray-100 text-gray-700"
+                        )}
+                      >
+                        {airdrop.status}
+                        <ChevronDown className="h-3 w-3 ml-0.5" />
+                      </Badge>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                      {airdropStatusOptions.map((s) => (
+                        <DropdownMenuItem
+                          key={s}
+                          onClick={() => {
+                            if (s !== airdrop.status) {
+                              updateStatusMutation.mutate({ id: airdrop.id, status: s });
+                            }
+                          }}
+                          className={cn(
+                            "cursor-pointer",
+                            s === airdrop.status && "bg-accent font-medium"
+                          )}
+                        >
+                          <div className={cn("h-2 w-2 rounded-full mr-2", statusColors[s]?.replace("bg-", "bg-").split(" ")[0])} />
+                          {s}
+                          {s === airdrop.status && <span className="ml-auto text-xs text-muted-foreground">current</span>}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 {airdrop.notes && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">
-                    {airdrop.notes}
-                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{airdrop.notes}</p>
                 )}
               </CardContent>
             </Card>
@@ -267,46 +307,27 @@ export default function AirdropsPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New Airdrop</DialogTitle>
-            <DialogDescription>
-              Add a new airdrop to the global catalog
-            </DialogDescription>
+            <DialogDescription>Add a new airdrop to the global catalog</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                placeholder="e.g. EigenLayer"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <Input id="name" placeholder="e.g. EigenLayer" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="chain">Chain *</Label>
-                <Input
-                  id="chain"
-                  placeholder="e.g. Ethereum"
-                  value={chain}
-                  onChange={(e) => setChain(e.target.value)}
-                />
+                <Input id="chain" placeholder="e.g. Ethereum" value={chain} onChange={(e) => setChain(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  placeholder="e.g. DeFi"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                />
+                <Input id="category" placeholder="e.g. DeFi" value={category} onChange={(e) => setCategory(e.target.value)} />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Priority</Label>
               <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -316,31 +337,16 @@ export default function AirdropsPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="url">URL</Label>
-              <Input
-                id="url"
-                placeholder="https://..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
+              <Input id="url" placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any additional notes..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
+              <Textarea id="notes" placeholder="Any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
             </div>
             <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>
-                Cancel
-              </DialogClose>
+              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
               <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create
               </Button>
             </DialogFooter>
@@ -358,17 +364,9 @@ export default function AirdropsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button
-              variant="destructive"
-              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" onClick={() => deleteId && deleteMutation.mutate(deleteId)} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
             </Button>
           </DialogFooter>
