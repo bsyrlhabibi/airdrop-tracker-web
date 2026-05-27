@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink, ChevronDown } from "lucide-react";
+import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink, ChevronDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -65,15 +65,26 @@ export default function AirdropsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  // Create form state
+  // Create form
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("medium");
   const [url, setUrl] = useState("");
-  const [notes, setNotes] = useState("");
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Edit form
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editChain, setEditChain] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPriority, setEditPriority] = useState("medium");
+  const [editUrl, setEditUrl] = useState("");
+  const [editDateStart, setEditDateStart] = useState("");
+  const [editDateEnd, setEditDateEnd] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   const { data: airdrops, isLoading } = useQuery({
     queryKey: ["airdrops"],
@@ -98,6 +109,27 @@ export default function AirdropsPage() {
       queryClient.invalidateQueries({ queryKey: ["airdrops"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Status updated");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      updateAirdrop(editId!, {
+        name: editName,
+        chain: editChain,
+        category: editCategory,
+        priority: editPriority,
+        url: editUrl,
+        date_start: editDateStart || undefined,
+        date_end: editDateEnd || undefined,
+        notes: editNotes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["airdrops"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Airdrop updated");
+      setEditId(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -131,6 +163,18 @@ export default function AirdropsPage() {
       return;
     }
     createMutation.mutate({ name, chain, category, priority, url, date_start: dateStart || undefined, date_end: dateEnd || undefined, notes });
+  }
+
+  function startEdit(a: Airdrop) {
+    setEditId(a.id);
+    setEditName(a.name);
+    setEditChain(a.chain);
+    setEditCategory(a.category);
+    setEditPriority(a.priority);
+    setEditUrl(a.url || "");
+    setEditDateStart(a.date_start ? a.date_start.split("T")[0] : "");
+    setEditDateEnd(a.date_end ? a.date_end.split("T")[0] : "");
+    setEditNotes(a.notes || "");
   }
 
   const filtered = (airdrops ?? []).filter((a) => {
@@ -211,20 +255,14 @@ export default function AirdropsPage() {
                   <CardTitle className="text-base">{airdrop.name}</CardTitle>
                   <div className="flex items-center gap-1">
                     {airdrop.url && (
-                      <a
-                        href={airdrop.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <a href={airdrop.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                         <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
                       </a>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={(e) => { e.stopPropagation(); setDeleteId(airdrop.id); }}
-                    >
+                    <Button variant="ghost" size="icon-xs" onClick={(e) => { e.stopPropagation(); startEdit(airdrop); }}>
+                      <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon-xs" onClick={(e) => { e.stopPropagation(); setDeleteId(airdrop.id); }}>
                       <Trash2 className="h-3.5 w-3.5 text-red-500" />
                     </Button>
                   </div>
@@ -239,8 +277,6 @@ export default function AirdropsPage() {
                   <Badge variant="secondary" className={cn("text-xs", priorityColors[airdrop.priority])}>
                     {airdrop.priority}
                   </Badge>
-
-                  {/* Status — clickable dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       onClick={(e) => e.stopPropagation()}
@@ -266,12 +302,9 @@ export default function AirdropsPage() {
                               updateStatusMutation.mutate({ id: airdrop.id, status: s });
                             }
                           }}
-                          className={cn(
-                            "cursor-pointer",
-                            s === airdrop.status && "bg-accent font-medium"
-                          )}
+                          className={cn("cursor-pointer", s === airdrop.status && "bg-accent font-medium")}
                         >
-                          <div className={cn("h-2 w-2 rounded-full mr-2", statusColors[s]?.replace("bg-", "bg-").split(" ")[0])} />
+                          <div className={cn("h-2 w-2 rounded-full mr-2", statusColors[s]?.split(" ")[0])} />
                           {s}
                           {s === airdrop.status && <span className="ml-auto text-xs text-muted-foreground">current</span>}
                         </DropdownMenuItem>
@@ -323,17 +356,17 @@ export default function AirdropsPage() {
           </DialogHeader>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name">Name *</Label>
-              <Input id="name" placeholder="e.g. EigenLayer" value={name} onChange={(e) => setName(e.target.value)} />
+              <Label>Name *</Label>
+              <Input placeholder="e.g. EigenLayer" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="chain">Chain *</Label>
-                <Input id="chain" placeholder="e.g. Ethereum" value={chain} onChange={(e) => setChain(e.target.value)} />
+                <Label>Chain *</Label>
+                <Input placeholder="e.g. Ethereum" value={chain} onChange={(e) => setChain(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="category">Category</Label>
-                <Input id="category" placeholder="e.g. DeFi" value={category} onChange={(e) => setCategory(e.target.value)} />
+                <Label>Category</Label>
+                <Input placeholder="e.g. DeFi" value={category} onChange={(e) => setCategory(e.target.value)} />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -348,22 +381,22 @@ export default function AirdropsPage() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="url">URL</Label>
-              <Input id="url" placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
+              <Label>URL</Label>
+              <Input placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dateStart">Date Start</Label>
-                <Input id="dateStart" type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
+                <Label>Date Start</Label>
+                <Input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="dateEnd">Date End</Label>
-                <Input id="dateEnd" type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
+                <Label>Date End</Label>
+                <Input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" placeholder="Any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+              <Label>Notes</Label>
+              <Textarea placeholder="Any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
             </div>
             <DialogFooter>
               <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
@@ -373,6 +406,70 @@ export default function AirdropsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editId !== null} onOpenChange={() => setEditId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Airdrop</DialogTitle>
+            <DialogDescription>Update airdrop details</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Chain</Label>
+                <Input value={editChain} onChange={(e) => setEditChain(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Category</Label>
+                <Input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Priority</Label>
+                <Select value={editPriority} onValueChange={(v) => v && setEditPriority(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>URL</Label>
+                <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Date Start</Label>
+                <Input type="date" value={editDateStart} onChange={(e) => setEditDateStart(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Date End</Label>
+                <Input type="date" value={editDateEnd} onChange={(e) => setEditDateEnd(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Notes</Label>
+              <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={3} />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditId(null)}>Cancel</Button>
+              <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+                {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
