@@ -205,13 +205,7 @@ export default function WalletsPage() {
                 <SelectContent>
                   {(accounts ?? []).map((acc) => (
                     <SelectItem key={acc.id} value={String(acc.id)}>
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: acc.color }}
-                        />
-                        {acc.name}
-                      </span>
+                      {acc.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
