@@ -97,8 +97,8 @@ export interface AirdropTask {
   category?: Category;
   name: string;
   status: string;
-  frequency: string;
-  date: string | null;
+  start_date: string | null;
+  end_date: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

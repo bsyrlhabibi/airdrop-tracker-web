@@ -4,7 +4,6 @@ import { use, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAirdrop,
-  updateAirdrop,
   deleteAirdrop,
   getAirdropTasks,
   createAirdropTask,
@@ -44,13 +43,20 @@ const priorityColors: Record<string, string> = {
   low: "bg-green-100 text-green-700",
 };
 
-const statusOptions = ["pending", "ongoing", "finish", "cancel"];
+const airdropStatusColors: Record<string, string> = {
+  active: "bg-blue-100 text-blue-700",
+  end: "bg-gray-200 text-gray-600",
+  upcoming: "bg-purple-100 text-purple-700",
+  missed: "bg-red-100 text-red-700",
+};
 
-const statusColors: Record<string, string> = {
+// Airdrop task status options (NOT account task status)
+const taskStatusOptions = ["pending", "ongoing", "end"];
+
+const taskStatusColors: Record<string, string> = {
   pending: "bg-gray-100 text-gray-700",
   ongoing: "bg-yellow-100 text-yellow-700",
-  finish: "bg-green-100 text-green-700",
-  cancel: "bg-red-100 text-red-700",
+  end: "bg-green-100 text-green-700",
 };
 
 export default function AirdropDetailPage({
@@ -62,18 +68,20 @@ export default function AirdropDetailPage({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Add task form state
+  // Add task form
   const [taskName, setTaskName] = useState("");
   const [taskCategoryId, setTaskCategoryId] = useState<string>("");
   const [taskStatus, setTaskStatus] = useState("pending");
-  const [taskDate, setTaskDate] = useState("");
+  const [taskStartDate, setTaskStartDate] = useState("");
+  const [taskEndDate, setTaskEndDate] = useState("");
 
   // Edit task state
   const [editTaskId, setEditTaskId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editCategoryId, setEditCategoryId] = useState<string>("");
   const [editStatus, setEditStatus] = useState("pending");
-  const [editDate, setEditDate] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
 
   const { data: airdrop, isLoading } = useQuery({
     queryKey: ["airdrop", id],
@@ -101,26 +109,28 @@ export default function AirdropDetailPage({
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (data: { name: string; category_id?: number; status: string; date?: string }) =>
+    mutationFn: (data: { name: string; category_id?: number; status: string; start_date?: string; end_date?: string }) =>
       createAirdropTask(Number(id), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
       setTaskName("");
       setTaskCategoryId("");
       setTaskStatus("pending");
-      setTaskDate("");
+      setTaskStartDate("");
+      setTaskEndDate("");
       toast.success("Task added");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; date?: string }) =>
+    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; start_date?: string; end_date?: string }) =>
       updateAirdropTask(data.taskId, {
         name: data.name,
         category_id: data.category_id,
         status: data.status,
-        date: data.date,
+        start_date: data.start_date,
+        end_date: data.end_date,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["airdrop-tasks", id] });
@@ -143,9 +153,10 @@ export default function AirdropDetailPage({
     if (!taskName.trim()) return;
     createTaskMutation.mutate({
       name: taskName.trim(),
-      category_id: taskCategoryId ? Number(taskCategoryId) : undefined,
+      category_id: taskCategoryId && taskCategoryId !== "none" ? Number(taskCategoryId) : undefined,
       status: taskStatus,
-      date: taskDate || undefined,
+      start_date: taskStartDate || undefined,
+      end_date: taskEndDate || undefined,
     });
   }
 
@@ -154,9 +165,10 @@ export default function AirdropDetailPage({
     updateTaskMutation.mutate({
       taskId,
       name: editName.trim(),
-      category_id: editCategoryId ? Number(editCategoryId) : undefined,
+      category_id: editCategoryId && editCategoryId !== "none" ? Number(editCategoryId) : undefined,
       status: editStatus,
-      date: editDate || undefined,
+      start_date: editStartDate || undefined,
+      end_date: editEndDate || undefined,
     });
   }
 
@@ -165,12 +177,18 @@ export default function AirdropDetailPage({
     setEditName(task.name);
     setEditCategoryId(task.category_id?.toString() || "");
     setEditStatus(task.status);
-    setEditDate(task.date ? task.date.split("T")[0] : "");
+    setEditStartDate(task.start_date ? task.start_date.split("T")[0] : "");
+    setEditEndDate(task.end_date ? task.end_date.split("T")[0] : "");
   }
 
   function getCategoryName(id: number | null | undefined) {
     if (!id || !categories) return null;
     return categories.find((c) => c.id === id);
+  }
+
+  function formatDate(d: string | null) {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 
   if (isLoading) {
@@ -185,9 +203,7 @@ export default function AirdropDetailPage({
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-gray-500">Airdrop not found</p>
-        <Button variant="outline" className="mt-3" render={<Link href="/airdrops" />}>
-          Back to Airdrops
-        </Button>
+        <Button variant="outline" className="mt-3" render={<Link href="/airdrops" />}>Back to Airdrops</Button>
       </div>
     );
   }
@@ -223,14 +239,13 @@ export default function AirdropDetailPage({
               <Badge variant="secondary" className={cn("text-xs", priorityColors[airdrop.priority])}>
                 {airdrop.priority}
               </Badge>
-              <Badge variant="secondary" className={cn("text-xs", statusColors[airdrop.status] || "bg-gray-100 text-gray-700")}>
+              <Badge variant="secondary" className={cn("text-xs", airdropStatusColors[airdrop.status] || "bg-gray-100 text-gray-700")}>
                 {airdrop.status}
               </Badge>
               {airdrop.category && (
                 <Badge variant="outline" className="text-xs">{airdrop.category}</Badge>
               )}
             </div>
-            {airdrop.notes && <p className="text-sm text-gray-600">{airdrop.notes}</p>}
             {(airdrop.date_start || airdrop.date_end) && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>📅</span>
@@ -239,11 +254,7 @@ export default function AirdropDetailPage({
                 {airdrop.date_end && <span>End: {new Date(airdrop.date_end).toLocaleDateString()}</span>}
               </div>
             )}
-            {airdrop.deadline && (
-              <p className="text-xs text-gray-500">
-                Deadline: {new Date(airdrop.deadline).toLocaleDateString()}
-              </p>
-            )}
+            {airdrop.notes && <p className="text-sm text-gray-600">{airdrop.notes}</p>}
           </div>
         </CardContent>
       </Card>
@@ -272,14 +283,10 @@ export default function AirdropDetailPage({
                   className="flex-1"
                 />
                 <Button type="submit" size="sm" disabled={!taskName.trim() || createTaskMutation.isPending}>
-                  {createTaskMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
+                  {createTaskMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 </Button>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Select value={taskCategoryId} onValueChange={(v) => setTaskCategoryId(v ?? "")}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Category" />
@@ -301,21 +308,21 @@ export default function AirdropDetailPage({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {statusOptions.map((s) => (
+                    {taskStatusOptions.map((s) => (
                       <SelectItem key={s} value={s}>
-                        <Badge variant="secondary" className={cn("text-xs", statusColors[s])}>
-                          {s}
-                        </Badge>
+                        <Badge variant="secondary" className={cn("text-xs", taskStatusColors[s])}>{s}</Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Input
-                  type="date"
-                  value={taskDate}
-                  onChange={(e) => setTaskDate(e.target.value)}
-                  className="w-40"
-                />
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-gray-500 whitespace-nowrap">Start:</Label>
+                  <Input type="date" value={taskStartDate} onChange={(e) => setTaskStartDate(e.target.value)} className="w-36" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-gray-500 whitespace-nowrap">End:</Label>
+                  <Input type="date" value={taskEndDate} onChange={(e) => setTaskEndDate(e.target.value)} className="w-36" />
+                </div>
               </div>
             </form>
 
@@ -333,12 +340,8 @@ export default function AirdropDetailPage({
                   if (isEditing) {
                     return (
                       <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          placeholder="Task name"
-                        />
-                        <div className="flex gap-2">
+                        <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Task name" />
+                        <div className="flex flex-wrap gap-2">
                           <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v ?? "")}>
                             <SelectTrigger className="w-40">
                               <SelectValue placeholder="Category" />
@@ -346,9 +349,7 @@ export default function AirdropDetailPage({
                             <SelectContent>
                               <SelectItem value="none">No Category</SelectItem>
                               {(categories ?? []).map((c) => (
-                                <SelectItem key={c.id} value={c.id.toString()}>
-                                  {c.name}
-                                </SelectItem>
+                                <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -357,50 +358,47 @@ export default function AirdropDetailPage({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {statusOptions.map((s) => (
+                              {taskStatusOptions.map((s) => (
                                 <SelectItem key={s} value={s}>{s}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <Input
-                            type="date"
-                            value={editDate}
-                            onChange={(e) => setEditDate(e.target.value)}
-                            className="w-40"
-                          />
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-gray-500">Start:</Label>
+                            <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="w-36" />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-gray-500">End:</Label>
+                            <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="w-36" />
+                          </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleUpdateTask(task.id)} disabled={updateTaskMutation.isPending}>
-                            Save
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>
-                            Cancel
-                          </Button>
+                          <Button size="sm" onClick={() => handleUpdateTask(task.id)} disabled={updateTaskMutation.isPending}>Save</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>Cancel</Button>
                         </div>
                       </div>
                     );
                   }
 
                   return (
-                    <div
-                      key={task.id}
-                      className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 hover:bg-gray-100 transition-colors"
-                    >
+                    <div key={task.id} className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2.5 hover:bg-gray-100 transition-colors">
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium">{task.name}</span>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           {cat && (
                             <Badge variant="outline" className="text-xs">
                               <div className="h-2 w-2 rounded-full mr-1" style={{ backgroundColor: cat.color }} />
                               {cat.name}
                             </Badge>
                           )}
-                          <Badge variant="secondary" className={cn("text-xs", statusColors[task.status])}>
+                          <Badge variant="secondary" className={cn("text-xs", taskStatusColors[task.status])}>
                             {task.status}
                           </Badge>
-                          {task.date && (
+                          {(task.start_date || task.end_date) && (
                             <span className="text-xs text-muted-foreground">
-                              {new Date(task.date).toLocaleDateString()}
+                              📅 {formatDate(task.start_date)}
+                              {task.start_date && task.end_date && " → "}
+                              {formatDate(task.end_date)}
                             </span>
                           )}
                         </div>
@@ -422,12 +420,7 @@ export default function AirdropDetailPage({
 
       {/* Delete */}
       <div className="flex justify-end">
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}
-        >
+        <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate()} disabled={deleteMutation.isPending}>
           {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Trash2 className="mr-2 h-4 w-4" />
           Delete Airdrop
