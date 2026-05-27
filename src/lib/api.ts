@@ -274,7 +274,7 @@ export async function getTasks(accountAirdropId: number): Promise<Task[]> {
 
 export async function createTask(
   accountAirdropId: number,
-  data: { name: string; category_id?: number; status?: string; date?: string }
+  data: { name: string; category_id?: number; status?: string; frequency?: string; date?: string }
 ): Promise<Task> {
   return request<Task>(`/api/account-airdrops/${accountAirdropId}/tasks`, {
     method: "POST",
@@ -284,7 +284,7 @@ export async function createTask(
 
 export async function updateTask(
   taskId: number,
-  data: Partial<{ name: string; category_id: number; status: string; date: string }>
+  data: Partial<{ name: string; category_id: number; status: string; frequency: string; date: string }>
 ): Promise<Task> {
   return request<Task>(`/api/tasks/${taskId}`, {
     method: "PUT",
@@ -294,6 +294,15 @@ export async function updateTask(
 
 export async function deleteTask(taskId: number): Promise<void> {
   return request<void>(`/api/tasks/${taskId}`, { method: "DELETE" });
+}
+
+// Today's tasks (per account)
+export async function getTodayTasks(accountId: number): Promise<Task[]> {
+  return request<Task[]>(`/api/accounts/${accountId}/tasks/today`);
+}
+
+export async function getDateTasks(accountId: number, date: string): Promise<Task[]> {
+  return request<Task[]>(`/api/accounts/${accountId}/tasks/by-date?date=${date}`);
 }
 
 // Wallets

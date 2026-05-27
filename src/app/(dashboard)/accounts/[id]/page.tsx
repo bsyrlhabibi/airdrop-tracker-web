@@ -13,6 +13,8 @@ import {
   createWallet,
   deleteWallet,
   getCategories,
+  getTodayTasks,
+  getDateTasks,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,9 @@ import {
   ChevronDown,
   ChevronUp,
   Pencil,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -78,11 +83,13 @@ export default function AccountDetailPage({
   const [taskCategoryId, setTaskCategoryId] = useState<string>("");
   const [taskStatus, setTaskStatus] = useState("pending");
   const [taskDate, setTaskDate] = useState("");
+  const [taskFrequency, setTaskFrequency] = useState("once");
   const [walletOpen, setWalletOpen] = useState(false);
   const [walletLabel, setWalletLabel] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [walletChain, setWalletChain] = useState("");
   const [removeAaId, setRemoveAaId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
   // Edit task state
   const [editTaskId, setEditTaskId] = useState<number | null>(null);
@@ -90,6 +97,7 @@ export default function AccountDetailPage({
   const [editCategoryId, setEditCategoryId] = useState<string>("");
   const [editStatus, setEditStatus] = useState("pending");
   const [editDate, setEditDate] = useState("");
+  const [editFrequency, setEditFrequency] = useState("once");
 
   // Queries
   const { data: account, isLoading } = useQuery({
@@ -106,6 +114,21 @@ export default function AccountDetailPage({
     queryKey: ["categories"],
     queryFn: getCategories,
   });
+
+  const { data: todayTasks } = useQuery({
+    queryKey: ["today-tasks", id, selectedDate],
+    queryFn: () => getDateTasks(id, selectedDate),
+  });
+
+  function changeDate(delta: number) {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + delta);
+    setSelectedDate(d.toISOString().split("T")[0]);
+  }
+
+  function isToday() {
+    return selectedDate === new Date().toISOString().split("T")[0];
+  }
 
   const assignedIds = new Set((account?.account_airdrops ?? []).map((aa) => aa.airdrop_id));
   const availableAirdrops = (allAirdrops ?? []).filter((a) => !assignedIds.has(a.id));
@@ -136,8 +159,8 @@ export default function AccountDetailPage({
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (data: { aaId: number; name: string; category_id?: number; status: string; date?: string }) =>
-      createTask(data.aaId, { name: data.name, category_id: data.category_id, status: data.status, date: data.date }),
+    mutationFn: (data: { aaId: number; name: string; category_id?: number; status: string; frequency?: string; date?: string }) =>
+      createTask(data.aaId, { name: data.name, category_id: data.category_id, status: data.status, frequency: data.frequency, date: data.date }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -146,17 +169,19 @@ export default function AccountDetailPage({
       setTaskCategoryId("");
       setTaskStatus("pending");
       setTaskDate("");
+      setTaskFrequency("once");
       setAddTaskAaId(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; date?: string }) =>
+    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; frequency?: string; date?: string }) =>
       updateTask(data.taskId, {
         name: data.name,
         category_id: data.category_id,
         status: data.status,
+        frequency: data.frequency,
         date: data.date,
       }),
     onSuccess: () => {
@@ -209,6 +234,7 @@ export default function AccountDetailPage({
       name: taskName.trim(),
       category_id: taskCategoryId && taskCategoryId !== "none" ? Number(taskCategoryId) : undefined,
       status: taskStatus,
+      frequency: taskFrequency,
       date: taskDate || undefined,
     });
   }
@@ -220,6 +246,7 @@ export default function AccountDetailPage({
       name: editName.trim(),
       category_id: editCategoryId && editCategoryId !== "none" ? Number(editCategoryId) : undefined,
       status: editStatus,
+      frequency: editFrequency,
       date: editDate || undefined,
     });
   }
@@ -229,6 +256,7 @@ export default function AccountDetailPage({
     setEditName(task.name);
     setEditCategoryId(task.category_id?.toString() || "");
     setEditStatus(task.status);
+    setEditFrequency(task.frequency || "once");
     setEditDate(task.date ? task.date.split("T")[0] : "");
   }
 
@@ -285,6 +313,106 @@ export default function AccountDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Today's Tasks */}
+      <Card className="border-blue-200 bg-blue-50/30">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-base">
+                {isToday() ? "Today's Tasks" : `Tasks — ${new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`}
+              </CardTitle>
+              <Badge variant="secondary" className="text-xs">
+                {(todayTasks ?? []).length} tasks
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon-xs" onClick={() => changeDate(-1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant={isToday() ? "default" : "ghost"} size="sm" onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}>
+                Today
+              </Button>
+              <Button variant="ghost" size="icon-xs" onClick={() => changeDate(1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {(todayTasks ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {isToday() ? "No tasks for today. Add tasks below!" : "No tasks for this date."}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {(todayTasks ?? []).map((task) => {
+                const cat = task.category;
+                return (
+                  <div key={task.id} className="flex items-center gap-3 rounded-lg bg-white px-3 py-2 border border-gray-100">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{task.name}</span>
+                        {task.account_airdrop?.airdrop && (
+                          <Badge variant="outline" className="text-xs text-gray-500">
+                            {task.account_airdrop.airdrop.name}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {cat && (
+                          <Badge variant="outline" className="text-xs">
+                            <div className="h-2 w-2 rounded-full mr-1" style={{ backgroundColor: cat.color }} />
+                            {cat.name}
+                          </Badge>
+                        )}
+                        {task.frequency && task.frequency !== "once" && (
+                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600">
+                            {task.frequency}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <Select value={task.status} onValueChange={(v) => {
+                      if (v) updateTaskMutation.mutate({ taskId: task.id, name: task.name, status: v, frequency: task.frequency });
+                    }}>
+                      <SelectTrigger className="w-28 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            <Badge variant="secondary" className={cn("text-xs", statusColors[s])}>{s}</Badge>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {/* Summary */}
+          {(todayTasks ?? []).length > 0 && (
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-blue-100">
+              {[
+                { label: "Pending", status: "pending", color: "text-gray-600" },
+                { label: "Ongoing", status: "ongoing", color: "text-yellow-600" },
+                { label: "Finish", status: "finish", color: "text-green-600" },
+                { label: "Edit", status: "edit", color: "text-orange-600" },
+              ].map((s) => {
+                const count = (todayTasks ?? []).filter((t) => t.status === s.status).length;
+                return (
+                  <span key={s.status} className={cn("text-xs font-medium", s.color)}>
+                    {s.label}: {count}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Airdrops Section */}
       <div className="flex items-center justify-between">
@@ -399,6 +527,17 @@ export default function AccountDetailPage({
                                   onChange={(e) => setEditDate(e.target.value)}
                                   className="w-40"
                                 />
+                                <Select value={editFrequency} onValueChange={(v) => setEditFrequency(v ?? "once")}>
+                                  <SelectTrigger className="w-28">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="once">Once</SelectItem>
+                                    <SelectItem value="daily">Daily</SelectItem>
+                                    <SelectItem value="weekly">Weekly</SelectItem>
+                                    <SelectItem value="monthly">Monthly</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                               <div className="flex gap-2">
                                 <Button size="sm" onClick={() => handleUpdateTask(task.id)} disabled={updateTaskMutation.isPending}>
@@ -429,6 +568,11 @@ export default function AccountDetailPage({
                                 <Badge variant="secondary" className={cn("text-xs", statusColors[task.status])}>
                                   {task.status}
                                 </Badge>
+                                {task.frequency && task.frequency !== "once" && (
+                                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600">
+                                    {task.frequency}
+                                  </Badge>
+                                )}
                                 {task.date && (
                                   <span className="text-xs text-muted-foreground">
                                     {new Date(task.date).toLocaleDateString()}
@@ -501,6 +645,17 @@ export default function AccountDetailPage({
                               onChange={(e) => setTaskDate(e.target.value)}
                               className="w-40"
                             />
+                            <Select value={taskFrequency} onValueChange={(v) => setTaskFrequency(v ?? "once")}>
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="once">Once</SelectItem>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       ) : (

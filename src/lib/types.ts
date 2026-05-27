@@ -77,10 +77,12 @@ export interface Category {
 export interface Task {
   id: number;
   account_airdrop_id: number;
+  account_airdrop?: AccountAirdrop;
   category_id: number | null;
   category?: Category;
   name: string;
   status: string;
+  frequency: string;
   date: string | null;
   gas_spent: number;
   tx_hash: string;
@@ -95,6 +97,7 @@ export interface AirdropTask {
   category?: Category;
   name: string;
   status: string;
+  frequency: string;
   date: string | null;
   sort_order: number;
   created_at: string;
