@@ -456,6 +456,16 @@ export default function AccountDetailPage({
             </div>
           )}
 
+          {/* Progress bar */}
+          {todayStats.total > 0 && (
+            <div className="flex items-center gap-2 mt-3">
+              <Progress value={todayStats.total > 0 ? Math.round((todayStats.finish / todayStats.total) * 100) : 0} className="flex-1 h-2" />
+              <span className="text-xs font-medium text-muted-foreground w-10 text-right">
+                {todayStats.total > 0 ? Math.round((todayStats.finish / todayStats.total) * 100) : 0}%
+              </span>
+            </div>
+          )}
+
           {/* Summary */}
           {todayStats.total > 0 && (
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-blue-100">
@@ -760,7 +770,6 @@ function AirdropCard({
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-muted-foreground">{finished}/{total}</span>
             <Button variant="ghost" size="icon-xs" onClick={onToggle}>
               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
@@ -769,10 +778,7 @@ function AirdropCard({
             </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Progress value={pct} className="flex-1 h-2" />
-          <span className="text-xs font-medium text-muted-foreground w-10 text-right">{pct}%</span>
-        </div>
+        {/* Progress removed — airdrop section shows template only */}
       </CardHeader>
 
       {isExpanded && (
