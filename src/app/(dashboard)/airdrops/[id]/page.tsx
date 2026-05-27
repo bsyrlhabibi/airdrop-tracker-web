@@ -295,10 +295,7 @@ export default function AirdropDetailPage({
                     <SelectItem value="none">No Category</SelectItem>
                     {(categories ?? []).map((cat) => (
                       <SelectItem key={cat.id} value={cat.id.toString()}>
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                          {cat.name}
-                        </div>
+                        {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -309,9 +306,7 @@ export default function AirdropDetailPage({
                   </SelectTrigger>
                   <SelectContent>
                     {taskStatusOptions.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        <Badge variant="secondary" className={cn("text-xs", taskStatusColors[s])}>{s}</Badge>
-                      </SelectItem>
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
