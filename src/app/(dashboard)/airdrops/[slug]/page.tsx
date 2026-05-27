@@ -341,11 +341,11 @@ export default function AirdropDetailPage({
                   </SelectContent>
                 </Select>
                 <div className="flex items-center gap-1">
-                  <Label className="text-xs text-gray-500 whitespace-nowrap">Start:</Label>
+                  <Label className="text-xs text-gray-500 whitespace-nowrap min-w-[2.5rem] text-right">Start:</Label>
                   <Input type="date" value={taskStartDate} onChange={(e) => setTaskStartDate(e.target.value)} className="w-full sm:w-36" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <Label className="text-xs text-gray-500 whitespace-nowrap">End:</Label>
+                  <Label className="text-xs text-gray-500 whitespace-nowrap min-w-[2.5rem] text-right">End:</Label>
                   <Input type="date" value={taskEndDate} onChange={(e) => setTaskEndDate(e.target.value)} className="w-full sm:w-36" />
                 </div>
               </div>
@@ -389,11 +389,11 @@ export default function AirdropDetailPage({
                             </SelectContent>
                           </Select>
                           <div className="flex items-center gap-1">
-                            <Label className="text-xs text-gray-500">Start:</Label>
+                            <Label className="text-xs text-gray-500 min-w-[2.5rem] text-right">Start:</Label>
                             <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="w-full sm:w-36" />
                           </div>
                           <div className="flex items-center gap-1">
-                            <Label className="text-xs text-gray-500">End:</Label>
+                            <Label className="text-xs text-gray-500 min-w-[2.5rem] text-right">End:</Label>
                             <Input type="date" value={editEndDate} onChange={(e) => setEditEndDate(e.target.value)} className="w-full sm:w-36" />
                           </div>
                         </div>
