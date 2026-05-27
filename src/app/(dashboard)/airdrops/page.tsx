@@ -70,6 +70,7 @@ export default function AirdropsPage() {
   const [chain, setChain] = useState("");
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("medium");
+  const [status, setStatus] = useState("active");
   const [url, setUrl] = useState("");
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
@@ -81,6 +82,7 @@ export default function AirdropsPage() {
   const [editChain, setEditChain] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editPriority, setEditPriority] = useState("medium");
+  const [editStatus, setEditStatus] = useState("active");
   const [editUrl, setEditUrl] = useState("");
   const [editDateStart, setEditDateStart] = useState("");
   const [editDateEnd, setEditDateEnd] = useState("");
@@ -120,6 +122,7 @@ export default function AirdropsPage() {
         chain: editChain,
         category: editCategory,
         priority: editPriority,
+        status: editStatus,
         url: editUrl,
         date_start: editDateStart || undefined,
         date_end: editDateEnd || undefined,
@@ -150,6 +153,7 @@ export default function AirdropsPage() {
     setChain("");
     setCategory("");
     setPriority("medium");
+    setStatus("active");
     setUrl("");
     setDateStart("");
     setDateEnd("");
@@ -162,7 +166,7 @@ export default function AirdropsPage() {
       toast.error("Name and chain are required");
       return;
     }
-    createMutation.mutate({ name, chain, category, priority, url, date_start: dateStart || undefined, date_end: dateEnd || undefined, notes });
+    createMutation.mutate({ name, chain, category, priority, status, url, date_start: dateStart || undefined, date_end: dateEnd || undefined, notes });
   }
 
   function startEdit(a: Airdrop) {
@@ -171,6 +175,7 @@ export default function AirdropsPage() {
     setEditChain(a.chain);
     setEditCategory(a.category);
     setEditPriority(a.priority);
+    setEditStatus(a.status || "active");
     setEditUrl(a.url || "");
     setEditDateStart(a.date_start ? a.date_start.split("T")[0] : "");
     setEditDateEnd(a.date_end ? a.date_end.split("T")[0] : "");
@@ -381,6 +386,17 @@ export default function AirdropsPage() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {airdropStatusOptions.map((s) => (
+                    <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
               <Label>URL</Label>
               <Input placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
             </div>
@@ -447,6 +463,17 @@ export default function AirdropsPage() {
                 <Label>URL</Label>
                 <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
               </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={(v) => v && setEditStatus(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {airdropStatusOptions.map((s) => (
+                    <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
