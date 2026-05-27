@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAccount,
   getAirdrops,
+  getAirdropTasks,
   assignAirdrop,
   removeAirdropFromAccount,
   createTask,
@@ -13,7 +14,6 @@ import {
   createWallet,
   deleteWallet,
   getCategories,
-  getTodayTasks,
   getDateTasks,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -48,22 +48,29 @@ import {
   Rocket,
   ChevronDown,
   ChevronUp,
-  Pencil,
-  Calendar,
   ChevronLeft,
   ChevronRight,
+  Calendar,
+  Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import type { AccountAirdrop, Task } from "@/lib/types";
+import type { AccountAirdrop, AirdropTask, Task } from "@/lib/types";
 
-const statusOptions = ["pending", "ongoing", "finish", "cancel"];
+const statusOptions = ["pending", "ongoing", "finish", "edit"];
 
 const statusColors: Record<string, string> = {
   pending: "bg-gray-100 text-gray-700",
   ongoing: "bg-yellow-100 text-yellow-700",
   finish: "bg-green-100 text-green-700",
-  cancel: "bg-red-100 text-red-700",
+  edit: "bg-orange-100 text-orange-700",
+};
+
+// Airdrop task status (global template)
+const airdropTaskStatusColors: Record<string, string> = {
+  pending: "bg-gray-100 text-gray-600",
+  ongoing: "bg-blue-100 text-blue-700",
+  end: "bg-green-100 text-green-700",
 };
 
 export default function AccountDetailPage({
@@ -78,26 +85,29 @@ export default function AccountDetailPage({
   // State
   const [assignOpen, setAssignOpen] = useState(false);
   const [expandedAa, setExpandedAa] = useState<number | null>(null);
-  const [addTaskAaId, setAddTaskAaId] = useState<number | null>(null);
-  const [taskName, setTaskName] = useState("");
-  const [taskCategoryId, setTaskCategoryId] = useState<string>("");
-  const [taskStatus, setTaskStatus] = useState("pending");
-  const [taskDate, setTaskDate] = useState("");
-  const [taskFrequency, setTaskFrequency] = useState("once");
   const [walletOpen, setWalletOpen] = useState(false);
   const [walletLabel, setWalletLabel] = useState("");
   const [walletAddress, setWalletAddress] = useState("");
   const [walletChain, setWalletChain] = useState("");
   const [removeAaId, setRemoveAaId] = useState<number | null>(null);
+
+  // Today's tasks state
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [taskAaId, setTaskAaId] = useState<number | null>(null);
+  const [taskName, setTaskName] = useState("");
+  const [taskCategoryId, setTaskCategoryId] = useState<string>("");
+  const [taskStatus, setTaskStatus] = useState("pending");
+  const [taskFrequency, setTaskFrequency] = useState("daily");
+  const [taskDate, setTaskDate] = useState("");
 
   // Edit task state
   const [editTaskId, setEditTaskId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editCategoryId, setEditCategoryId] = useState<string>("");
   const [editStatus, setEditStatus] = useState("pending");
+  const [editFrequency, setEditFrequency] = useState("daily");
   const [editDate, setEditDate] = useState("");
-  const [editFrequency, setEditFrequency] = useState("once");
 
   // Queries
   const { data: account, isLoading } = useQuery({
@@ -120,6 +130,10 @@ export default function AccountDetailPage({
     queryFn: () => getDateTasks(id, selectedDate),
   });
 
+  const assignedIds = new Set((account?.account_airdrops ?? []).map((aa) => aa.airdrop_id));
+  const availableAirdrops = (allAirdrops ?? []).filter((a) => !assignedIds.has(a.id));
+
+  // Date navigation
   function changeDate(delta: number) {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + delta);
@@ -130,9 +144,6 @@ export default function AccountDetailPage({
     return selectedDate === new Date().toISOString().split("T")[0];
   }
 
-  const assignedIds = new Set((account?.account_airdrops ?? []).map((aa) => aa.airdrop_id));
-  const availableAirdrops = (allAirdrops ?? []).filter((a) => !assignedIds.has(a.id));
-
   // Mutations
   const assignMutation = useMutation({
     mutationFn: (airdropId: number) => assignAirdrop(id, { airdrop_id: airdropId }),
@@ -140,7 +151,8 @@ export default function AccountDetailPage({
       queryClient.invalidateQueries({ queryKey: ["account", id] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Airdrop assigned & tasks synced");
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
+      toast.success("Airdrop assigned");
       setAssignOpen(false);
     },
     onError: (err: Error) => toast.error(err.message),
@@ -152,6 +164,7 @@ export default function AccountDetailPage({
       queryClient.invalidateQueries({ queryKey: ["account", id] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
       toast.success("Airdrop removed");
       setRemoveAaId(null);
     },
@@ -159,36 +172,30 @@ export default function AccountDetailPage({
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (data: { aaId: number; name: string; category_id?: number; status: string; frequency?: string; date?: string }) =>
+    mutationFn: (data: { aaId: number; name: string; category_id?: number; status: string; frequency: string; date?: string }) =>
       createTask(data.aaId, { name: data.name, category_id: data.category_id, status: data.status, frequency: data.frequency, date: data.date }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task added");
       setTaskName("");
       setTaskCategoryId("");
       setTaskStatus("pending");
-      setTaskDate("");
-      setTaskFrequency("once");
-      setAddTaskAaId(null);
+      setTaskFrequency("daily");
+      setAddTaskOpen(false);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: (data: { taskId: number; name: string; category_id?: number; status: string; frequency?: string; date?: string }) =>
-      updateTask(data.taskId, {
-        name: data.name,
-        category_id: data.category_id,
-        status: data.status,
-        frequency: data.frequency,
-        date: data.date,
-      }),
+    mutationFn: (data: { taskId: number; name?: string; category_id?: number; status?: string; frequency?: string; date?: string }) =>
+      updateTask(data.taskId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setEditTaskId(null);
-      toast.success("Task updated");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -197,6 +204,7 @@ export default function AccountDetailPage({
     mutationFn: (taskId: number) => deleteTask(taskId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account", id] });
+      queryClient.invalidateQueries({ queryKey: ["today-tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Task deleted");
     },
@@ -227,37 +235,38 @@ export default function AccountDetailPage({
     },
   });
 
-  function handleAddTask(aaId: number) {
-    if (!taskName.trim()) return;
+  function handleAddTask(e: React.FormEvent) {
+    e.preventDefault();
+    if (!taskName.trim() || !taskAaId) return;
     createTaskMutation.mutate({
-      aaId,
+      aaId: taskAaId,
       name: taskName.trim(),
       category_id: taskCategoryId && taskCategoryId !== "none" ? Number(taskCategoryId) : undefined,
       status: taskStatus,
       frequency: taskFrequency,
-      date: taskDate || undefined,
+      date: taskDate || selectedDate,
     });
   }
 
-  function handleUpdateTask(taskId: number) {
-    if (!editName.trim()) return;
+  function startEditTask(task: Task) {
+    setEditTaskId(task.id);
+    setEditName(task.name);
+    setEditCategoryId(task.category_id?.toString() || "");
+    setEditStatus(task.status);
+    setEditFrequency(task.frequency || "daily");
+    setEditDate(task.date ? task.date.split("T")[0] : "");
+  }
+
+  function handleUpdateTask() {
+    if (!editTaskId) return;
     updateTaskMutation.mutate({
-      taskId,
-      name: editName.trim(),
+      taskId: editTaskId,
+      name: editName || undefined,
       category_id: editCategoryId && editCategoryId !== "none" ? Number(editCategoryId) : undefined,
       status: editStatus,
       frequency: editFrequency,
       date: editDate || undefined,
     });
-  }
-
-  function startEdit(task: Task) {
-    setEditTaskId(task.id);
-    setEditName(task.name);
-    setEditCategoryId(task.category_id?.toString() || "");
-    setEditStatus(task.status);
-    setEditFrequency(task.frequency || "once");
-    setEditDate(task.date ? task.date.split("T")[0] : "");
   }
 
   function getCategoryName(id: number | null | undefined) {
@@ -271,13 +280,17 @@ export default function AccountDetailPage({
       toast.error("All wallet fields required");
       return;
     }
-    createWalletMutation.mutate({
-      label: walletLabel,
-      address: walletAddress,
-      chain: walletChain,
-      account_id: id,
-    });
+    createWalletMutation.mutate({ label: walletLabel, address: walletAddress, chain: walletChain, account_id: id });
   }
+
+  // Calculate stats for today's tasks
+  const todayStats = {
+    total: (todayTasks ?? []).length,
+    pending: (todayTasks ?? []).filter((t) => t.status === "pending").length,
+    ongoing: (todayTasks ?? []).filter((t) => t.status === "ongoing").length,
+    finish: (todayTasks ?? []).filter((t) => t.status === "finish").length,
+    edit: (todayTasks ?? []).filter((t) => t.status === "edit").length,
+  };
 
   if (isLoading) {
     return (
@@ -291,9 +304,7 @@ export default function AccountDetailPage({
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <p className="text-gray-500">Account not found</p>
-        <Button variant="outline" className="mt-3" render={<Link href="/accounts" />}>
-          Back to Accounts
-        </Button>
+        <Button variant="outline" className="mt-3" render={<Link href="/accounts" />}>Back to Accounts</Button>
       </div>
     );
   }
@@ -314,7 +325,7 @@ export default function AccountDetailPage({
         </div>
       </div>
 
-      {/* Today's Tasks */}
+      {/* ===== TODAY'S TASKS (Account Tasks - Daily Tracking) ===== */}
       <Card className="border-blue-200 bg-blue-50/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -323,9 +334,7 @@ export default function AccountDetailPage({
               <CardTitle className="text-base">
                 {isToday() ? "Today's Tasks" : `Tasks — ${new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`}
               </CardTitle>
-              <Badge variant="secondary" className="text-xs">
-                {(todayTasks ?? []).length} tasks
-              </Badge>
+              <Badge variant="secondary" className="text-xs">{todayStats.total} tasks</Badge>
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon-xs" onClick={() => changeDate(-1)}>
@@ -341,14 +350,63 @@ export default function AccountDetailPage({
           </div>
         </CardHeader>
         <CardContent>
+          {/* Add task button */}
+          <Button variant="outline" size="sm" className="mb-3" onClick={() => { setAddTaskOpen(true); setTaskDate(selectedDate); }}>
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add Task
+          </Button>
+
           {(todayTasks ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              {isToday() ? "No tasks for today. Add tasks below!" : "No tasks for this date."}
+              {isToday() ? "No tasks for today. Add tasks above!" : "No tasks for this date."}
             </p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {(todayTasks ?? []).map((task) => {
-                const cat = task.category;
+                const cat = getCategoryName(task.category_id);
+                const isEditing = editTaskId === task.id;
+
+                if (isEditing) {
+                  return (
+                    <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-white p-3">
+                      <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Task name" />
+                      <div className="flex flex-wrap gap-2">
+                        <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v ?? "")}>
+                          <SelectTrigger className="w-36"><SelectValue placeholder="Category" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No Category</SelectItem>
+                            {(categories ?? []).map((c) => (
+                              <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "pending")}>
+                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={editFrequency} onValueChange={(v) => setEditFrequency(v ?? "daily")}>
+                          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="once">Once</SelectItem>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="w-36" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleUpdateTask} disabled={updateTaskMutation.isPending}>Save</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>Cancel</Button>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={task.id} className="flex items-center gap-3 rounded-lg bg-white px-3 py-2 border border-gray-100">
                     <div className="flex-1 min-w-0">
@@ -368,14 +426,12 @@ export default function AccountDetailPage({
                           </Badge>
                         )}
                         {task.frequency && task.frequency !== "once" && (
-                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600">
-                            {task.frequency}
-                          </Badge>
+                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600">{task.frequency}</Badge>
                         )}
                       </div>
                     </div>
                     <Select value={task.status} onValueChange={(v) => {
-                      if (v) updateTaskMutation.mutate({ taskId: task.id, name: task.name, status: v, frequency: task.frequency });
+                      if (v) updateTaskMutation.mutate({ taskId: task.id, status: v });
                     }}>
                       <SelectTrigger className="w-28 h-8">
                         <SelectValue />
@@ -388,33 +444,37 @@ export default function AccountDetailPage({
                         ))}
                       </SelectContent>
                     </Select>
+                    <button onClick={() => startEditTask(task)} className="shrink-0 text-gray-400 hover:text-blue-500">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 text-gray-400 hover:text-red-500">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 );
               })}
             </div>
           )}
+
           {/* Summary */}
-          {(todayTasks ?? []).length > 0 && (
+          {todayStats.total > 0 && (
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-blue-100">
               {[
-                { label: "Pending", status: "pending", color: "text-gray-600" },
-                { label: "Ongoing", status: "ongoing", color: "text-yellow-600" },
-                { label: "Finish", status: "finish", color: "text-green-600" },
-                { label: "Edit", status: "edit", color: "text-orange-600" },
-              ].map((s) => {
-                const count = (todayTasks ?? []).filter((t) => t.status === s.status).length;
-                return (
-                  <span key={s.status} className={cn("text-xs font-medium", s.color)}>
-                    {s.label}: {count}
-                  </span>
-                );
-              })}
+                { label: "Pending", key: "pending", color: "text-gray-600" },
+                { label: "Ongoing", key: "ongoing", color: "text-yellow-600" },
+                { label: "Finish", key: "finish", color: "text-green-600" },
+                { label: "Edit", key: "edit", color: "text-orange-600" },
+              ].map((s) => (
+                <span key={s.key} className={cn("text-xs font-medium", s.color)}>
+                  {s.label}: {todayStats[s.key as keyof typeof todayStats]}
+                </span>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Airdrops Section */}
+      {/* ===== AIRDROPS SECTION (Global Template Reference) ===== */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Airdrops</h2>
         <Button size="sm" onClick={() => setAssignOpen(true)} disabled={availableAirdrops.length === 0}>
@@ -441,244 +501,23 @@ export default function AccountDetailPage({
             const isExpanded = expandedAa === aa.id;
 
             return (
-              <Card key={aa.id} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <CardTitle className="text-base truncate">
-                        {aa.airdrop?.name ?? "Unknown"}
-                      </CardTitle>
-                      {aa.airdrop?.chain && (
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {aa.airdrop.chain}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-muted-foreground">
-                        {finished}/{total}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => setExpandedAa(isExpanded ? null : aa.id)}
-                      >
-                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => setRemoveAaId(aa.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Progress value={pct} className="flex-1 h-2" />
-                    <span className="text-xs font-medium text-muted-foreground w-10 text-right">
-                      {pct}%
-                    </span>
-                  </div>
-                </CardHeader>
-
-                {isExpanded && (
-                  <CardContent className="pt-0">
-                    <div className="flex flex-col gap-1.5">
-                      {tasks.map((task) => {
-                        const cat = getCategoryName(task.category_id);
-                        const isEditing = editTaskId === task.id;
-
-                        if (isEditing) {
-                          return (
-                            <div key={task.id} className="flex flex-col gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                              <Input
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                placeholder="Task name"
-                              />
-                              <div className="flex gap-2">
-                                <Select value={editCategoryId} onValueChange={(v) => setEditCategoryId(v ?? "")}>
-                                  <SelectTrigger className="w-40">
-                                    <SelectValue placeholder="Category" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">No Category</SelectItem>
-                                    {(categories ?? []).map((c) => (
-                                      <SelectItem key={c.id} value={c.id.toString()}>
-                                        {c.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "pending")}>
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {statusOptions.map((s) => (
-                                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Input
-                                  type="date"
-                                  value={editDate}
-                                  onChange={(e) => setEditDate(e.target.value)}
-                                  className="w-40"
-                                />
-                                <Select value={editFrequency} onValueChange={(v) => setEditFrequency(v ?? "once")}>
-                                  <SelectTrigger className="w-28">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="once">Once</SelectItem>
-                                    <SelectItem value="daily">Daily</SelectItem>
-                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={() => handleUpdateTask(task.id)} disabled={updateTaskMutation.isPending}>
-                                  Save
-                                </Button>
-                                <Button variant="ghost" size="sm" onClick={() => setEditTaskId(null)}>
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div
-                            key={task.id}
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors bg-gray-50 hover:bg-gray-100"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium">{task.name}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                {cat && (
-                                  <Badge variant="outline" className="text-xs">
-                                    <div className="h-2 w-2 rounded-full mr-1" style={{ backgroundColor: cat.color }} />
-                                    {cat.name}
-                                  </Badge>
-                                )}
-                                <Badge variant="secondary" className={cn("text-xs", statusColors[task.status])}>
-                                  {task.status}
-                                </Badge>
-                                {task.frequency && task.frequency !== "once" && (
-                                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600">
-                                    {task.frequency}
-                                  </Badge>
-                                )}
-                                {task.date && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(task.date).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <button onClick={() => startEdit(task)} className="shrink-0 text-gray-400 hover:text-blue-500">
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => deleteTaskMutation.mutate(task.id)} className="shrink-0 text-gray-400 hover:text-red-500">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        );
-                      })}
-
-                      {/* Add task */}
-                      {addTaskAaId === aa.id ? (
-                        <div className="flex flex-col gap-2 mt-2">
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Task name..."
-                              value={taskName}
-                              onChange={(e) => setTaskName(e.target.value)}
-                              className="flex-1"
-                              onKeyDown={(e) => e.key === "Enter" && handleAddTask(aa.id)}
-                            />
-                            <Button size="sm" onClick={() => handleAddTask(aa.id)} disabled={!taskName.trim()}>
-                              Add
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => { setAddTaskAaId(null); setTaskName(""); }}>
-                              Cancel
-                            </Button>
-                          </div>
-                          <div className="flex gap-2">
-                            <Select value={taskCategoryId} onValueChange={(v) => setTaskCategoryId(v ?? "")}>
-                              <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">No Category</SelectItem>
-                                {(categories ?? []).map((cat) => (
-                                  <SelectItem key={cat.id} value={cat.id.toString()}>
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                                      {cat.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Select value={taskStatus} onValueChange={(v) => setTaskStatus(v ?? "pending")}>
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {statusOptions.map((s) => (
-                                  <SelectItem key={s} value={s}>
-                                    <Badge variant="secondary" className={cn("text-xs", statusColors[s])}>
-                                      {s}
-                                    </Badge>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              type="date"
-                              value={taskDate}
-                              onChange={(e) => setTaskDate(e.target.value)}
-                              className="w-40"
-                            />
-                            <Select value={taskFrequency} onValueChange={(v) => setTaskFrequency(v ?? "once")}>
-                              <SelectTrigger className="w-28">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="once">Once</SelectItem>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="mt-1 self-start"
-                          onClick={() => setAddTaskAaId(aa.id)}
-                        >
-                          <Plus className="mr-1 h-3.5 w-3.5" />
-                          Add Task
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
+              <AirdropCard
+                key={aa.id}
+                aa={aa}
+                tasks={tasks}
+                finished={finished}
+                total={total}
+                pct={pct}
+                isExpanded={isExpanded}
+                onToggle={() => setExpandedAa(isExpanded ? null : aa.id)}
+                onRemove={() => setRemoveAaId(aa.id)}
+              />
             );
           })}
         </div>
       )}
 
-      {/* Wallets Section */}
+      {/* ===== WALLET SECTION ===== */}
       <div className="flex items-center justify-between mt-4">
         <h2 className="text-lg font-semibold text-gray-900">Wallets</h2>
         <Button size="sm" onClick={() => setWalletOpen(true)}>
@@ -714,32 +553,107 @@ export default function AccountDetailPage({
         </div>
       )}
 
+      {/* ===== DIALOGS ===== */}
+
+      {/* Add Task Dialog */}
+      <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Task</DialogTitle>
+            <DialogDescription>Add a new tracking task for this account</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddTask} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Airdrop *</Label>
+              <Select value={taskAaId?.toString() || ""} onValueChange={(v) => setTaskAaId(v ? Number(v) : null)}>
+                <SelectTrigger><SelectValue placeholder="Select airdrop" /></SelectTrigger>
+                <SelectContent>
+                  {(account.account_airdrops ?? []).map((aa) => (
+                    <SelectItem key={aa.id} value={aa.id.toString()}>
+                      {aa.airdrop?.name ?? "Unknown"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Task Name *</Label>
+              <Input placeholder="e.g. Bridge 0.1 ETH" value={taskName} onChange={(e) => setTaskName(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Category</Label>
+                <Select value={taskCategoryId} onValueChange={(v) => setTaskCategoryId(v ?? "")}>
+                  <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Category</SelectItem>
+                    {(categories ?? []).map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Frequency</Label>
+                <Select value={taskFrequency} onValueChange={(v) => setTaskFrequency(v ?? "daily")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="once">Once</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Status</Label>
+                <Select value={taskStatus} onValueChange={(v) => setTaskStatus(v ?? "pending")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Date</Label>
+                <Input type="date" value={taskDate} onChange={(e) => setTaskDate(e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+              <Button type="submit" disabled={createTaskMutation.isPending || !taskAaId}>
+                {createTaskMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Assign Airdrop Dialog */}
       <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign Airdrop</DialogTitle>
-            <DialogDescription>
-              Select an airdrop from the catalog. Tasks will be auto-synced.
-            </DialogDescription>
+            <DialogDescription>Select an airdrop from the catalog. Tasks will be auto-synced.</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             {availableAirdrops.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                All airdrops are already assigned to this account.
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">All airdrops are already assigned.</p>
             ) : (
               <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
                 {availableAirdrops.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => assignMutation.mutate(a.id)}
-                    disabled={assignMutation.isPending}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-gray-50",
-                      assignMutation.isPending && "opacity-50"
-                    )}
-                  >
+                  <button key={a.id} onClick={() => assignMutation.mutate(a.id)} disabled={assignMutation.isPending}
+                    className={cn("flex items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-gray-50", assignMutation.isPending && "opacity-50")}>
                     <Rocket className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{a.name}</p>
@@ -762,17 +676,11 @@ export default function AccountDetailPage({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Remove Airdrop</DialogTitle>
-            <DialogDescription>
-              This will remove this airdrop and all its tasks from this account.
-            </DialogDescription>
+            <DialogDescription>This will remove this airdrop and all its tasks from this account.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <Button
-              variant="destructive"
-              onClick={() => removeAaId && removeMutation.mutate(removeAaId)}
-              disabled={removeMutation.isPending}
-            >
+            <Button variant="destructive" onClick={() => removeAaId && removeMutation.mutate(removeAaId)} disabled={removeMutation.isPending}>
               {removeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Remove
             </Button>
@@ -811,5 +719,102 @@ export default function AccountDetailPage({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ===== AIRDROP CARD COMPONENT =====
+// Shows airdrop info + global task list (read-only reference)
+function AirdropCard({
+  aa,
+  tasks,
+  finished,
+  total,
+  pct,
+  isExpanded,
+  onToggle,
+  onRemove,
+}: {
+  aa: AccountAirdrop;
+  tasks: Task[];
+  finished: number;
+  total: number;
+  pct: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onRemove: () => void;
+}) {
+  const { data: airdropTasks } = useQuery({
+    queryKey: ["airdrop-tasks", aa.airdrop_id],
+    queryFn: () => getAirdropTasks(aa.airdrop_id),
+    enabled: isExpanded,
+  });
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <CardTitle className="text-base truncate">{aa.airdrop?.name ?? "Unknown"}</CardTitle>
+            {aa.airdrop?.chain && (
+              <Badge variant="outline" className="text-xs shrink-0">{aa.airdrop.chain}</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-muted-foreground">{finished}/{total}</span>
+            <Button variant="ghost" size="icon-xs" onClick={onToggle}>
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="icon-xs" onClick={onRemove}>
+              <Trash2 className="h-3.5 w-3.5 text-red-500" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <Progress value={pct} className="flex-1 h-2" />
+          <span className="text-xs font-medium text-muted-foreground w-10 text-right">{pct}%</span>
+        </div>
+      </CardHeader>
+
+      {isExpanded && (
+        <CardContent className="pt-0">
+          {/* Show AIRDROP tasks (global template) as reference */}
+          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Task Template</p>
+          {(airdropTasks ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">No tasks defined for this airdrop.</p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {(airdropTasks ?? []).map((task) => (
+                <div key={task.id} className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm">{task.name}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      {task.category && (
+                        <Badge variant="outline" className="text-xs">
+                          <div className="h-2 w-2 rounded-full mr-1" style={{ backgroundColor: task.category.color }} />
+                          {task.category.name}
+                        </Badge>
+                      )}
+                      <Badge variant="secondary" className={cn("text-xs", airdropTaskStatusColors[task.status] || "bg-gray-100 text-gray-700")}>
+                        {task.status}
+                      </Badge>
+                      {(task.start_date || task.end_date) && (
+                        <span className="text-xs text-muted-foreground">
+                          📅 {task.start_date ? new Date(task.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "?"}
+                          {task.start_date && task.end_date && " → "}
+                          {task.end_date ? new Date(task.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground mt-3">
+            ℹ️ Edit tasks on the <Link href={`/airdrops/${aa.airdrop_id}`} className="text-blue-600 underline">airdrop detail page</Link>
+          </p>
+        </CardContent>
+      )}
+    </Card>
   );
 }
