@@ -52,13 +52,14 @@ const airdropStatusColors: Record<string, string> = {
   missed: "bg-red-100 text-red-700",
 };
 
-// Airdrop task status options (NOT account task status)
-const taskStatusOptions = ["pending", "ongoing", "end"];
+// Task status options — synced with daily tasks
+const taskStatusOptions = ["pending", "ongoing", "finish", "missed"];
 
 const taskStatusColors: Record<string, string> = {
   pending: "bg-gray-100 text-gray-700",
   ongoing: "bg-yellow-100 text-yellow-700",
-  end: "bg-green-100 text-green-700",
+  finish: "bg-green-100 text-green-700",
+  missed: "bg-red-100 text-red-700",
 };
 
 export default function AirdropDetailPage({
