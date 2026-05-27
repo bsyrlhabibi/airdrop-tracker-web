@@ -15,14 +15,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -115,11 +108,11 @@ export default function WalletsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Wallets</h1>
-          <p className="text-xs lg:text-sm text-muted-foreground">Manage your wallet addresses</p>
+          <h1 className="text-2xl font-bold text-gray-900">Wallets</h1>
+          <p className="text-sm text-muted-foreground">Manage your wallet addresses</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
@@ -128,66 +121,63 @@ export default function WalletsPage() {
       </div>
 
       {wallets && wallets.length > 0 ? (
-        <div className="rounded-lg border bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Account</TableHead>
-                <TableHead>Label</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead>Chain</TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {wallets.map((wallet) => (
-                <TableRow key={wallet.id}>
-                  <TableCell>
-                    {wallet.account ? (
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: wallet.account.color }} />
-                        <span className="text-sm">{wallet.account.name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{wallet.label}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <code className="rounded bg-gray-100 px-2 py-0.5 text-xs">
-                        {truncateAddress(wallet.address)}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => copyAddress(wallet.address)}
-                        title="Copy address"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {wallets.map((wallet) => (
+            <div
+              key={wallet.id}
+              className="group relative flex flex-col gap-2.5 rounded-lg border bg-white p-4"
+            >
+              {/* Top: Account + Label + Delete */}
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-1">
+                  {wallet.account && (
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: wallet.account.color }}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {wallet.account.name}
+                      </span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{wallet.chain}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => setDeleteId(wallet.id)}
-                      title="Delete wallet"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  )}
+                  <span className="text-sm font-semibold text-gray-900">
+                    {wallet.label}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setDeleteId(wallet.id)}
+                  title="Delete wallet"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                </Button>
+              </div>
+
+              {/* Bottom: Address + Chain */}
+              <div className="flex items-center gap-2">
+                <code className="flex-1 truncate rounded bg-gray-100 px-2 py-1 text-xs">
+                  {truncateAddress(wallet.address)}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => copyAddress(wallet.address)}
+                  title="Copy"
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {wallet.chain}
+                </Badge>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8 lg:py-12">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
           <Wallet className="mb-4 h-10 w-10 text-muted-foreground" />
           <h3 className="text-lg font-medium text-gray-900">No wallets yet</h3>
           <p className="mb-4 text-sm text-muted-foreground">
