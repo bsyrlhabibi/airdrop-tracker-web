@@ -55,7 +55,7 @@ import {
   Pencil,
 } from "lucide-react";
 import Link from "next/link";
-import { cn, slugify } from "@/lib/utils";
+import { cn, slugify, formatLocalDate } from "@/lib/utils";
 import type { AccountAirdrop, AirdropTask, Task } from "@/lib/types";
 
 const statusOptions = ["pending", "ongoing", "finish", "missed"];
@@ -351,7 +351,7 @@ export default function AccountDetailPage({
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-600" />
               <CardTitle className="text-base">
-                {isToday() ? "Today's Tasks" : `Tasks — ${new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`}
+                {isToday() ? "Today's Tasks" : `Tasks — ${formatLocalDate(selectedDate, { weekday: "short", month: "short", day: "numeric" })}`}
               </CardTitle>
               <Badge variant="secondary" className="text-xs">{todayStats.total} tasks</Badge>
             </div>
@@ -819,9 +819,9 @@ function AirdropCard({
                       </Badge>
                       {(task.start_date || task.end_date) && (
                         <span className="text-xs text-muted-foreground">
-                          📅 {task.start_date ? new Date(task.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "?"}
+                          📅 {task.start_date ? formatLocalDate(task.start_date, { month: "short", day: "numeric" }) : "?"}
                           {task.start_date && task.end_date && " → "}
-                          {task.end_date ? new Date(task.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                          {task.end_date ? formatLocalDate(task.end_date, { month: "short", day: "numeric" }) : ""}
                         </span>
                       )}
                     </div>

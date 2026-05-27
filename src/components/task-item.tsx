@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, formatLocalDate } from "@/lib/utils";
 import type { Task, Category } from "@/lib/types";
 import { Trash2, Pencil } from "lucide-react";
 
@@ -44,7 +44,7 @@ export function TaskItem({
           </Badge>
           {task.date && (
             <span className="text-xs text-muted-foreground">
-              {new Date(task.date).toLocaleDateString()}
+              {formatLocalDate(task.date)}
             </span>
           )}
         </div>

@@ -33,7 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Search, Rocket, Loader2, Trash2, ExternalLink, ChevronDown, Pencil } from "lucide-react";
-import { cn, slugify } from "@/lib/utils";
+import { cn, slugify, formatLocalDate } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -320,9 +320,9 @@ export default function AirdropsPage() {
                 {(airdrop.date_start || airdrop.date_end) && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span>📅</span>
-                    {airdrop.date_start && <span>{new Date(airdrop.date_start).toLocaleDateString()}</span>}
+                    {airdrop.date_start && <span>{formatLocalDate(airdrop.date_start)}</span>}
                     {airdrop.date_start && airdrop.date_end && <span>→</span>}
-                    {airdrop.date_end && <span>{new Date(airdrop.date_end).toLocaleDateString()}</span>}
+                    {airdrop.date_end && <span>{formatLocalDate(airdrop.date_end)}</span>}
                   </div>
                 )}
                 {airdrop.notes && (

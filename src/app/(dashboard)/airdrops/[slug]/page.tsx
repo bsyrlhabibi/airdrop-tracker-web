@@ -13,7 +13,7 @@ import {
   getCategories,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
-import { slugify } from "@/lib/utils";
+import { slugify, formatLocalDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -209,7 +209,7 @@ export default function AirdropDetailPage({
 
   function formatDate(d: string | null) {
     if (!d) return null;
-    return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return formatLocalDate(d, { month: "short", day: "numeric" });
   }
 
   if (airdropLoading || (!airdropId && allAirdrops)) {
@@ -278,9 +278,9 @@ export default function AirdropDetailPage({
             {(airdrop.date_start || airdrop.date_end) && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>📅</span>
-                {airdrop.date_start && <span>Start: {new Date(airdrop.date_start).toLocaleDateString()}</span>}
+                {airdrop.date_start && <span>Start: {formatLocalDate(airdrop.date_start)}</span>}
                 {airdrop.date_start && airdrop.date_end && <span>→</span>}
-                {airdrop.date_end && <span>End: {new Date(airdrop.date_end).toLocaleDateString()}</span>}
+                {airdrop.date_end && <span>End: {formatLocalDate(airdrop.date_end)}</span>}
               </div>
             )}
             {airdrop.notes && <p className="text-sm text-gray-600">{airdrop.notes}</p>}
