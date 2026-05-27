@@ -374,27 +374,29 @@ export default function AirdropsPage() {
                 <Input placeholder="e.g. DeFi" value={category} onChange={(e) => setCategory(e.target.value)} />
               </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => v && setStatus(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {airdropStatusOptions.map((s) => (
-                    <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {airdropStatusOptions.map((s) => (
+                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>URL</Label>
@@ -460,20 +462,20 @@ export default function AirdropsPage() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>URL</Label>
-                <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
+                <Label>Status</Label>
+                <Select value={editStatus} onValueChange={(v) => v && setEditStatus(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {airdropStatusOptions.map((s) => (
+                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Status</Label>
-              <Select value={editStatus} onValueChange={(v) => v && setEditStatus(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {airdropStatusOptions.map((s) => (
-                    <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>URL</Label>
+              <Input value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
