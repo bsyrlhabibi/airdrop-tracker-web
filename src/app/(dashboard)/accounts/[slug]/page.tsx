@@ -426,11 +426,11 @@ export default function AccountDetailPage({
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1">
-                          <Label className="text-xs text-gray-500">Gas Spent:</Label>
+                          <Label className="text-xs text-gray-500 min-w-[5.5rem] text-right">Gas Spent:</Label>
                           <Input type="number" step="0.0001" placeholder="0.001" value={editGasSpent} onChange={(e) => setEditGasSpent(e.target.value)} className="w-full sm:w-28" />
                         </div>
                         <div className="flex items-center gap-1">
-                          <Label className="text-xs text-gray-500">Tx Hash:</Label>
+                          <Label className="text-xs text-gray-500 min-w-[5.5rem] text-right">Tx Hash:</Label>
                           <Input placeholder="0xabc..." value={editTxHash} onChange={(e) => setEditTxHash(e.target.value)} className="w-full sm:w-48" />
                         </div>
                       </div>
